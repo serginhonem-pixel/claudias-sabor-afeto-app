@@ -25,7 +25,7 @@ export function Sidebar({ onSignOut }: { onSignOut: () => void }) {
   return (
     <aside className="w-56 bg-dark flex flex-col sticky top-0 h-screen overflow-y-auto shrink-0">
       <div className="p-5 border-b border-white/[0.07]">
-        <p className="font-heading italic text-rose-mid text-[15px] leading-snug">Claudia's<br />Sabor e Afeto</p>
+        <p className="font-heading italic text-rose-mid text-[15px] leading-snug">Claudia&apos;s<br />Sabor e Afeto</p>
         <p className="text-white/30 text-[10px] uppercase tracking-widest mt-1">Gestão Artesanal</p>
         {conta?.nome && <p className="text-white/50 text-xs mt-2 truncate">{conta.nome}</p>}
       </div>

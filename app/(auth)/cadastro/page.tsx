@@ -45,7 +45,7 @@ export default function CadastroPage() {
       <Toaster position="top-center" />
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <p className="font-heading italic text-rose-DEFAULT text-2xl">Claudia's</p>
+          <p className="font-heading italic text-rose-DEFAULT text-2xl">Claudia&apos;s</p>
           <p className="font-heading font-semibold text-dark text-2xl">Sabor e Afeto</p>
           <p className="text-muted text-sm mt-1">Crie sua conta grátis</p>
         </div>

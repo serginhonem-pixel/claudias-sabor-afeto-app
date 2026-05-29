@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const router = useRouter();
   useEffect(() => {
     if (!loading) router.replace("/dashboard");
