@@ -6,7 +6,7 @@ import { ContaContext } from "@/hooks/useConta";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "react-hot-toast";
 import type { Conta } from "@/types";
-import { ShoppingBag, LayoutDashboard, Cake, Package, Users, MoreHorizontal, LogOut } from "lucide-react";
+import { ShoppingBag, LayoutDashboard, Cake, Package, MoreHorizontal, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
