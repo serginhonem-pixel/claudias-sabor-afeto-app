@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { createConta, saveUserConta } from "@/lib/firestore";
 import toast, { Toaster } from "react-hot-toast";
@@ -32,8 +33,8 @@ export default function OnboardingPage() {
       <Toaster position="top-center" />
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <p className="font-heading italic text-rose-DEFAULT text-3xl">🎂</p>
-          <p className="font-heading font-semibold text-dark text-xl mt-2">Bem-vinda!</p>
+          <Image src="/logo.png" alt="Claudia's Sabor e Afeto" width={200} height={86} className="object-contain mx-auto" />
+          <p className="font-heading font-semibold text-dark text-xl mt-4">Bem-vinda!</p>
           <p className="text-muted text-sm mt-1">Vamos configurar sua confeitaria</p>
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-rose-light/60 p-6 space-y-4">

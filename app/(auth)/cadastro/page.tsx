@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { createConta, saveUserConta } from "@/lib/firestore";
 import toast, { Toaster } from "react-hot-toast";
@@ -45,9 +46,8 @@ export default function CadastroPage() {
       <Toaster position="top-center" />
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <p className="font-heading italic text-rose-DEFAULT text-2xl">Claudia&apos;s</p>
-          <p className="font-heading font-semibold text-dark text-2xl">Sabor e Afeto</p>
-          <p className="text-muted text-sm mt-1">Crie sua conta grátis</p>
+          <Image src="/logo.png" alt="Claudia's Sabor e Afeto" width={220} height={95} className="object-contain mx-auto" />
+          <p className="text-muted text-sm mt-3">Crie sua conta grátis</p>
         </div>
 
         <div className="flex gap-2 mb-6">

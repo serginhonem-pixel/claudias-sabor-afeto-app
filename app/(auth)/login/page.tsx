@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserConta } from "@/lib/firestore";
 import toast, { Toaster } from "react-hot-toast";
@@ -36,9 +37,8 @@ export default function LoginPage() {
       <Toaster position="top-center" />
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <p className="font-heading italic text-rose-DEFAULT text-2xl">Claudia&apos;s</p>
-          <p className="font-heading font-semibold text-dark text-2xl">Sabor e Afeto</p>
-          <p className="text-muted text-sm mt-1">Entre na sua conta</p>
+          <Image src="/logo.png" alt="Claudia's Sabor e Afeto" width={220} height={95} className="object-contain mx-auto" />
+          <p className="text-muted text-sm mt-3">Entre na sua conta</p>
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-rose-light/60 p-6 space-y-4">
           <div>

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useConta } from "@/hooks/useConta";
 import { LayoutDashboard, ShoppingBag, Cake, BookOpen, Package, TrendingUp, Users, Settings, LogOut } from "lucide-react";
@@ -24,10 +25,9 @@ export function Sidebar({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <aside className="w-56 bg-dark flex flex-col sticky top-0 h-screen overflow-y-auto shrink-0">
-      <div className="p-5 border-b border-white/[0.07]">
-        <p className="font-heading italic text-rose-mid text-[15px] leading-snug">Claudia&apos;s<br />Sabor e Afeto</p>
-        <p className="text-white/30 text-[10px] uppercase tracking-widest mt-1">Gestão Artesanal</p>
-        {conta?.nome && <p className="text-white/50 text-xs mt-2 truncate">{conta.nome}</p>}
+      <div className="p-4 border-b border-white/[0.07] flex flex-col items-center">
+        <Image src="/logo.png" alt="Claudia's Sabor e Afeto" width={140} height={60} className="object-contain brightness-0 invert opacity-90" />
+        {conta?.nome && <p className="text-white/40 text-[10px] mt-2 truncate">{conta.nome}</p>}
       </div>
 
       <nav className="flex-1 py-3">
