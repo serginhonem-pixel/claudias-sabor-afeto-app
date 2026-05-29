@@ -1,0 +1,284 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useConta } from "@/hooks/useConta";
+import { getPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
+import { Topbar } from "@/components/layout/Topbar";
+import { Modal } from "@/components/ui/Modal";
+import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle } from "lucide-react";
+import toast from "react-hot-toast";
+import type { Pedido, Cliente, Produto, ItemPedido, StatusPedido } from "@/types";
+
+const STATUS: Record<StatusPedido, { label: string; cls: string }> = {
+  aguardando: { label: "Aguardando",  cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  producao:   { label: "Em Produção", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  pronto:     { label: "Pronto",      cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  entregue:   { label: "Entregue",    cls: "bg-slate-100 text-slate-500 border-slate-200" },
+  cancelado:  { label: "Cancelado",   cls: "bg-red-50 text-red-500 border-red-200" },
+};
+
+function fmt(v: number) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+
+export default function PedidosPage() {
+  const { conta } = useConta();
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [filtro, setFiltro] = useState<StatusPedido | "todos">("todos");
+  const [modal, setModal] = useState(false);
+  const [editando, setEditando] = useState<Pedido | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [clienteId, setClienteId] = useState("");
+  const [itens, setItens] = useState<ItemPedido[]>([]);
+  const [dataEntrega, setDataEntrega] = useState("");
+  const [formaPagamento, setFormaPagamento] = useState("pix");
+  const [obs, setObs] = useState("");
+  const [personalizacao, setPersonalizacao] = useState("");
+  const [status, setStatus] = useState<StatusPedido>("aguardando");
+  const [desconto, setDesconto] = useState(0);
+
+  function load() {
+    if (!conta) return;
+    getPedidos(conta.id).then(setPedidos);
+  }
+  useEffect(load, [conta]);
+  useEffect(() => {
+    if (!conta) return;
+    getClientes(conta.id).then(setClientes);
+    getProdutos(conta.id).then(ps => setProdutos(ps.filter(p => p.status !== "inativo")));
+  }, [conta]);
+
+  function openNew() {
+    setEditando(null);
+    setClienteId(""); setItens([]); setDataEntrega(""); setFormaPagamento("pix");
+    setObs(""); setPersonalizacao(""); setStatus("aguardando"); setDesconto(0);
+    setModal(true);
+  }
+
+  function openEdit(p: Pedido) {
+    setEditando(p);
+    setClienteId(p.clienteId); setItens(p.itens); setDataEntrega(p.dataEntrega);
+    setFormaPagamento(p.formaPagamento); setObs(p.obs ?? ""); setPersonalizacao(p.personalizacao ?? "");
+    setStatus(p.status); setDesconto(p.desconto);
+    setModal(true);
+  }
+
+  function addItem() {
+    const prod = produtos[0];
+    if (!prod) return;
+    setItens(ii => [...ii, { produtoId: prod.id, produtoNome: prod.nome, quantidade: 1, precoUnit: prod.precoVenda, subtotal: prod.precoVenda }]);
+  }
+
+  function updateItem(idx: number, produtoId: string, quantidade: number) {
+    const prod = produtos.find(p => p.id === produtoId);
+    if (!prod) return;
+    setItens(ii => ii.map((it, i) => i === idx ? { produtoId, produtoNome: prod.nome, quantidade, precoUnit: prod.precoVenda, subtotal: prod.precoVenda * quantidade } : it));
+  }
+
+  const total = itens.reduce((s, i) => s + i.subtotal, 0);
+  const totalFinal = Math.max(0, total - desconto);
+  const clienteSel = clientes.find(c => c.id === clienteId);
+
+  async function handleSave() {
+    if (!conta || !clienteSel) { toast.error("Selecione o cliente"); return; }
+    if (itens.length === 0) { toast.error("Adicione ao menos um item"); return; }
+    if (!dataEntrega) { toast.error("Informe a data de entrega"); return; }
+    setSaving(true);
+    try {
+      const numero = editando?.numero ?? await getProximoNumeroPedido(conta.id);
+      await savePedido(conta.id, {
+        numero, clienteId: clienteSel.id, clienteNome: clienteSel.nome,
+        clienteWhatsapp: clienteSel.whatsapp, itens, total, desconto, totalFinal,
+        formaPagamento, dataEntrega, status, obs, personalizacao,
+        createdAt: editando?.createdAt ?? new Date(), updatedAt: new Date(),
+      }, editando?.id);
+      toast.success(editando ? "Pedido atualizado!" : "Pedido criado!");
+      setModal(false); load();
+    } catch (err) { console.error(err); toast.error("Erro ao salvar"); }
+    finally { setSaving(false); }
+  }
+
+  async function avancarStatus(p: Pedido) {
+    if (!conta) return;
+    const prox: Record<StatusPedido, StatusPedido> = { aguardando: "producao", producao: "pronto", pronto: "entregue", entregue: "entregue", cancelado: "cancelado" };
+    await savePedido(conta.id, { ...p, status: prox[p.status], updatedAt: new Date() }, p.id);
+    toast.success(`Status: ${STATUS[prox[p.status]].label}`);
+    load();
+  }
+
+  async function handleDelete(id: string) {
+    if (!conta || !confirm("Excluir pedido?")) return;
+    await deletePedido(conta.id, id);
+    toast.success("Removido"); load();
+  }
+
+  const filtrados = filtro === "todos" ? pedidos : pedidos.filter(p => p.status === filtro);
+
+  return (
+    <>
+      <Topbar title="Pedidos" actions={
+        <button onClick={openNew} className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+          <Plus size={13} /> Novo Pedido
+        </button>
+      } />
+
+      <div className="p-4 md:p-6 max-w-4xl">
+        {/* Filtros */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+          {(["todos", "aguardando", "producao", "pronto", "entregue", "cancelado"] as const).map(s => {
+            const count = s === "todos" ? pedidos.length : pedidos.filter(p => p.status === s).length;
+            return (
+              <button key={s} onClick={() => setFiltro(s)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === s ? "bg-rose-DEFAULT text-white border-rose-DEFAULT" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+                {s === "todos" ? "Todos" : STATUS[s].label} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Lista */}
+        <div className="space-y-3">
+          {filtrados.length === 0 ? (
+            <div className="bg-white rounded-xl border border-rose-light/60 p-10 text-center">
+              <p className="text-4xl mb-3">🎂</p>
+              <p className="text-muted text-sm">Nenhum pedido encontrado.</p>
+            </div>
+          ) : filtrados.map(p => (
+            <div key={p.id} className="bg-white rounded-xl border border-rose-light/60 p-4 hover:border-rose-mid/40 transition">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono text-muted">#{p.numero}</span>
+                    <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full border ${STATUS[p.status].cls}`}>{STATUS[p.status].label}</span>
+                    {p.dataEntrega < new Date().toISOString().slice(0,10) && p.status !== "entregue" && p.status !== "cancelado" && (
+                      <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Atrasado</span>
+                    )}
+                  </div>
+                  <p className="font-semibold text-dark">{p.clienteNome}</p>
+                  <p className="text-xs text-muted truncate">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
+                  <p className="text-xs text-muted mt-1">📅 Entrega: {p.dataEntrega} · {p.formaPagamento}</p>
+                  {p.personalizacao && <p className="text-xs text-caramel-DEFAULT mt-1">✏️ {p.personalizacao}</p>}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-heading font-semibold text-lg text-dark">{fmt(p.totalFinal)}</p>
+                  <div className="flex gap-1 mt-2 justify-end">
+                    {p.status !== "entregue" && p.status !== "cancelado" && (
+                      <button onClick={() => avancarStatus(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-rose-DEFAULT transition" title="Avançar status">
+                        <CheckCircle2 size={14} />
+                      </button>
+                    )}
+                    <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition" title="WhatsApp">
+                      <MessageCircle size={14} />
+                    </a>
+                    <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose-DEFAULT transition">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Modal open={modal} onClose={() => setModal(false)} title={editando ? "Editar Pedido" : "Novo Pedido"} size="lg">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="field-label">Cliente *</label>
+              <select className="field-input" value={clienteId} onChange={e => setClienteId(e.target.value)}>
+                <option value="">Selecione o cliente...</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.whatsapp}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Data de Entrega *</label>
+              <input type="date" className="field-input" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} />
+            </div>
+            <div>
+              <label className="field-label">Pagamento</label>
+              <select className="field-input" value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}>
+                {["pix","dinheiro","cartao","fiado"].map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Itens */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="field-label mb-0">Itens do Pedido *</label>
+              <button type="button" onClick={addItem} className="text-xs text-rose-DEFAULT font-semibold hover:underline flex items-center gap-1">
+                <Plus size={11} /> Adicionar
+              </button>
+            </div>
+            {itens.length === 0 ? (
+              <p className="text-xs text-muted italic">Nenhum item adicionado.</p>
+            ) : (
+              <div className="space-y-2">
+                {itens.map((item, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_60px_80px_20px] gap-2 items-center">
+                    <select className="field-input" value={item.produtoId} onChange={e => updateItem(i, e.target.value, item.quantidade)}>
+                      {produtos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                    </select>
+                    <input type="number" min="1" className="field-input" value={item.quantidade}
+                      onChange={e => updateItem(i, item.produtoId, Number(e.target.value))} />
+                    <span className="text-xs text-right font-semibold text-dark">{fmt(item.subtotal)}</span>
+                    <button type="button" onClick={() => setItens(ii => ii.filter((_, idx) => idx !== i))} className="text-muted hover:text-red-500 transition">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Desconto (R$)</label>
+              <input type="number" min="0" step="0.01" className="field-input" value={desconto} onChange={e => setDesconto(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="field-label">Status</label>
+              <select className="field-input" value={status} onChange={e => setStatus(e.target.value as StatusPedido)}>
+                {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="field-label">Personalização / Mensagem no bolo</label>
+            <input className="field-input" value={personalizacao} onChange={e => setPersonalizacao(e.target.value)} placeholder="Ex: Feliz aniversário João!" />
+          </div>
+          <div>
+            <label className="field-label">Observações internas</label>
+            <textarea className="field-input resize-none h-14" value={obs} onChange={e => setObs(e.target.value)} placeholder="Notas internas..." />
+          </div>
+
+          {total > 0 && (
+            <div className="bg-rose-light/50 rounded-xl px-4 py-3 flex justify-between items-center">
+              <span className="text-sm text-muted">Total Final</span>
+              <span className="font-heading font-bold text-xl text-rose-DEFAULT">{fmt(totalFinal)}</span>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2 border-t border-rose-light/60">
+            <button onClick={() => setModal(false)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">Cancelar</button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+              {saving ? "Salvando..." : "Salvar Pedido"}
+            </button>
+          </div>
+        </div>
+
+        <style jsx global>{`
+          .field-label{display:block;font-size:.7rem;font-weight:600;color:#7A6860;margin-bottom:.35rem}
+          .field-input{width:100%;border:1px solid #FAEDEF;border-radius:10px;padding:.5rem .75rem;font-size:.82rem;outline:none;transition:border .15s;background:#fff}
+          .field-input:focus{border-color:#E8A0AE;box-shadow:0 0 0 3px rgba(196,86,106,.08)}
+        `}</style>
+      </Modal>
+    </>
+  );
+}
