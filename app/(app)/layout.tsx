@@ -1,8 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { getUserConta } from "@/lib/firestore";
 import { ContaContext } from "@/hooks/useConta";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "react-hot-toast";
@@ -11,40 +10,26 @@ import { ShoppingBag, LayoutDashboard, Cake, Package, Users, MoreHorizontal, Log
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, signOut } = useAuth();
-  const router = useRouter();
-  const [conta, setConta] = useState<Conta | null>(null);
-  const [contaLoading, setContaLoading] = useState(true);
-  const [maisAberto, setMaisAberto] = useState(false);
+const CONTA_DEMO: Conta = {
+  id: "demo",
+  nome: "Claudia's Sabor e Afeto",
+  telefone: "(11) 99999-9999",
+  createdAt: new Date(),
+  ativo: true,
+};
 
-  useEffect(() => {
-    if (!loading && !user) { router.replace("/login"); return; }
-    if (!user) return;
-    getUserConta(user.uid).then(c => {
-      if (!c) router.replace("/onboarding");
-      else setConta(c);
-      setContaLoading(false);
-    });
-  }, [user, loading, router]);
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { signOut } = useAuth();
+  const router = useRouter();
+  const [maisAberto, setMaisAberto] = useState(false);
 
   async function handleSignOut() {
     await signOut();
     router.replace("/login");
   }
 
-  if (loading || contaLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-cream">
-        <div className="w-8 h-8 border-4 border-rose-DEFAULT border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
   return (
-    <ContaContext.Provider value={{ conta, loading: contaLoading }}>
+    <ContaContext.Provider value={{ conta: CONTA_DEMO, loading: false }}>
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: "DM Sans, sans-serif", fontSize: "13px" } }} />
       <div className="flex min-h-screen bg-cream">
         <div className="hidden md:flex">

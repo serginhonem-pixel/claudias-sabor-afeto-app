@@ -7,8 +7,8 @@ export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
   useEffect(() => {
-    if (!loading) router.replace(user ? "/dashboard" : "/login");
-  }, [user, loading, router]);
+    if (!loading) router.replace("/dashboard");
+  }, [loading, router]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-cream">
       <div className="w-8 h-8 border-4 border-rose-DEFAULT border-t-transparent rounded-full animate-spin" />
