@@ -26,7 +26,9 @@ export function Sidebar({ onSignOut }: { onSignOut: () => void }) {
   return (
     <aside className="w-56 bg-dark flex flex-col sticky top-0 h-screen overflow-y-auto shrink-0">
       <div className="p-4 border-b border-white/[0.07] flex flex-col items-center">
-        <Image src="/logo.png" alt="Claudia's Sabor e Afeto" width={140} height={60} className="object-contain brightness-0 invert opacity-90" />
+        <div className="bg-cream rounded-xl px-3 py-2">
+          <Image src="/logo.png" alt="Claudia's Sabor e Afeto" width={130} height={56} className="object-contain" />
+        </div>
         {conta?.nome && <p className="text-white/40 text-[10px] mt-2 truncate">{conta.nome}</p>}
       </div>
 
