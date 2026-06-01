@@ -6,7 +6,7 @@ import { Topbar } from "@/components/layout/Topbar";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Circle, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Pedido } from "@/types";
 
 const STATUS = {
@@ -71,7 +71,7 @@ export default function DashboardPage() {
   const { conta } = useConta();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [counts, setCounts] = useState({ insumos: -1, receitas: -1, produtos: -1, clientes: -1 });
-  const [guiaAberto, setGuiaAberto] = useState(true);
+  const [guiaAberto, setGuiaAberto] = useState(false);
   const [passoAberto, setPassoAberto] = useState<number | null>(null);
 
   useEffect(() => {
@@ -111,9 +111,18 @@ export default function DashboardPage() {
   return (
     <>
       <Topbar title="Dashboard" actions={
-        <Link href="/pedidos" className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-          + Novo Pedido
-        </Link>
+        <>
+          <button
+            onClick={() => setGuiaAberto(v => !v)}
+            className="flex items-center gap-1.5 border border-rose-light hover:border-rose-mid text-muted hover:text-rose-DEFAULT text-xs font-semibold px-3 py-1.5 rounded-lg transition bg-white"
+            title="Primeiros passos"
+          >
+            <Map size={13} /> Guia
+          </button>
+          <Link href="/pedidos" className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+            + Novo Pedido
+          </Link>
+        </>
       } />
       <div className="p-4 md:p-6 max-w-5xl space-y-5">
 
