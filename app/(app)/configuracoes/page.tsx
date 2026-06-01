@@ -4,7 +4,7 @@ import { useConta } from "@/hooks/useConta";
 import { updateConta } from "@/lib/firestore";
 import { seedDados, limparDados } from "@/lib/seed";
 import { Topbar } from "@/components/layout/Topbar";
-import { Save, FlaskConical, Trash2 } from "lucide-react";
+import { Save, FlaskConical, Trash2, Link2, Copy } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ConfigPage() {
@@ -92,6 +92,48 @@ export default function ConfigPage() {
             <Save size={14} />
             {saving ? "Salvando..." : "Salvar Configurações"}
           </button>
+        </div>
+
+        {/* Link de pedidos para clientes */}
+        <div className="bg-white rounded-xl border border-rose-light/60 p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <Link2 size={18} className="text-rose mt-0.5 shrink-0" />
+            <div>
+              <h2 className="font-heading font-semibold text-dark text-sm">Link de Pedidos</h2>
+              <p className="text-xs text-muted mt-1">
+                Compartilhe esse link com seus clientes para que eles façam pedidos direto pelo celular.
+              </p>
+            </div>
+          </div>
+          {conta && (
+            <>
+              <div className="bg-rose-light/30 rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3">
+                <span className="text-xs text-dark font-mono flex-1 truncate">
+                  {typeof window !== "undefined" ? window.location.origin : "https://claudias-sabor-afeto-app.vercel.app"}/c/{conta.id}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/c/${conta.id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Link copiado!");
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 border border-rose-light hover:bg-rose-light/30 text-muted text-sm font-medium py-2 rounded-xl transition"
+                >
+                  <Copy size={13} /> Copiar link
+                </button>
+                <a
+                  href={`/c/${conta.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] text-white text-sm font-semibold py-2 rounded-xl transition"
+                >
+                  <Link2 size={13} /> Ver cardápio
+                </a>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Dados de exemplo */}
