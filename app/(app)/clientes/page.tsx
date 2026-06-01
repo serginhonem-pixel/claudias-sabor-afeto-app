@@ -140,6 +140,15 @@ export default function ClientesPage() {
         <p className="text-xs text-muted mt-3 text-center">{clientes.length} cliente{clientes.length !== 1 ? "s" : ""} cadastrado{clientes.length !== 1 ? "s" : ""}</p>
       </div>
 
+      {/* FAB */}
+      <button
+        onClick={openNew}
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 w-14 h-14 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-105 active:scale-95"
+        title="Cadastrar cliente"
+      >
+        <Plus size={24} />
+      </button>
+
       <Modal open={modal} onClose={() => setModal(false)} title={editando ? "Editar Cliente" : "Cadastrar Cliente"}>
         <div className="space-y-3">
           <div>

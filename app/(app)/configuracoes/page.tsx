@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
 import { updateConta } from "@/lib/firestore";
+import { seedDados } from "@/lib/seed";
 import { Topbar } from "@/components/layout/Topbar";
-import { Save } from "lucide-react";
+import { Save, FlaskConical } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ConfigPage() {
@@ -12,6 +13,7 @@ export default function ConfigPage() {
   const [telefone, setTelefone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     if (!conta) return;
@@ -19,6 +21,21 @@ export default function ConfigPage() {
     setTelefone(conta.telefone ?? "");
     setInstagram(conta.instagram ?? "");
   }, [conta]);
+
+  async function handleSeed() {
+    if (!conta) return;
+    if (!confirm("Isso vai apagar todos os dados atuais e carregar os dados de exemplo. Confirmar?")) return;
+    setSeeding(true);
+    try {
+      await seedDados(conta.id);
+      toast.success("Dados de exemplo carregados! Explore o app.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao carregar dados. Verifique o Firebase.");
+    } finally {
+      setSeeding(false);
+    }
+  }
 
   async function handleSave() {
     if (!conta) return;
@@ -58,6 +75,34 @@ export default function ConfigPage() {
             className="mt-4 w-full flex items-center justify-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
             <Save size={14} />
             {saving ? "Salvando..." : "Salvar Configurações"}
+          </button>
+        </div>
+
+        {/* Dados de exemplo */}
+        <div className="bg-white rounded-xl border border-rose-light/60 p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <FlaskConical size={18} className="text-rose-DEFAULT mt-0.5 shrink-0" />
+            <div>
+              <h2 className="font-heading font-semibold text-dark text-sm">Dados de Exemplo</h2>
+              <p className="text-xs text-muted mt-1">
+                Popula o app com insumos, receitas, produtos, clientes e pedidos fictícios para você explorar todas as funcionalidades. <strong className="text-dark">Apaga tudo que tiver cadastrado antes.</strong>
+              </p>
+            </div>
+          </div>
+          <div className="bg-rose-light/30 rounded-xl p-3 mb-4 text-xs text-muted space-y-1">
+            <p>📦 <strong className="text-dark">12 insumos</strong> — farinhas, chocolates, laticínios, embalagens</p>
+            <p>📖 <strong className="text-dark">3 receitas</strong> — Bolo de Chocolate, Brigadeiro Gourmet, Torta de Limão</p>
+            <p>🎂 <strong className="text-dark">5 produtos</strong> — com CMV calculado automaticamente</p>
+            <p>👥 <strong className="text-dark">5 clientes</strong> — com WhatsApp e informações completas</p>
+            <p>🛍️ <strong className="text-dark">5 pedidos</strong> — em diferentes status (aguardando, produção, pronto, entregue)</p>
+          </div>
+          <button
+            onClick={handleSeed}
+            disabled={seeding}
+            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-rose-mid/40 hover:border-rose-DEFAULT hover:bg-rose-light/20 text-rose-DEFAULT text-sm font-semibold py-2.5 rounded-xl transition disabled:opacity-60"
+          >
+            <FlaskConical size={15} />
+            {seeding ? "Carregando dados..." : "Carregar dados de exemplo"}
           </button>
         </div>
 
