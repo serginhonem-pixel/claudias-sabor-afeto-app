@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDocs, getDoc, addDoc, updateDoc,
+  collection, doc, getDocs, getDoc, addDoc, updateDoc, setDoc,
   deleteDoc, query, where, orderBy, limit, Timestamp, DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -34,7 +34,7 @@ export async function createConta(data: Omit<Conta, "id" | "createdAt">): Promis
 }
 
 export async function updateConta(id: string, data: Partial<Conta>) {
-  await updateDoc(doc(requireDb(), "contas", id), data as DocumentData);
+  await setDoc(doc(requireDb(), "contas", id), data as DocumentData, { merge: true });
 }
 
 export async function saveUserConta(userId: string, contaId: string) {
