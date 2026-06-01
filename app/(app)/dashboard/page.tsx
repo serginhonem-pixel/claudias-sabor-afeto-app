@@ -70,7 +70,7 @@ const PASSOS = [
 export default function DashboardPage() {
   const { conta } = useConta();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [counts, setCounts] = useState({ insumos: -1, receitas: -1, produtos: -1, clientes: -1 });
+  const [counts, setCounts] = useState({ insumos: 0, receitas: 0, produtos: 0, clientes: 0 });
   const [guiaAberto, setGuiaAberto] = useState(false);
   const [passoAberto, setPassoAberto] = useState<number | null>(null);
 
@@ -106,7 +106,6 @@ export default function DashboardPage() {
   ];
   const totalConcluidos = concluidos.filter(Boolean).length;
   const tudoPronto = totalConcluidos === 5;
-  const carregando = counts.insumos === -1;
 
   return (
     <>
@@ -153,22 +152,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Guia de primeiros passos */}
-        {!carregando && (
+        {guiaAberto && (
           <div className={`rounded-xl border overflow-hidden ${tudoPronto ? "border-emerald-200 bg-emerald-50" : "border-rose-light/60 bg-white"}`}>
-            <button
-              onClick={() => setGuiaAberto(v => !v)}
-              className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-black/[0.02] transition"
-            >
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-rose-light/40">
               <div className="flex items-center gap-3">
                 <span className="text-base">{tudoPronto ? "🎉" : "🗺️"}</span>
-                <div className="text-left">
+                <div>
                   <p className="font-semibold text-dark text-sm">
                     {tudoPronto ? "App configurado com sucesso!" : "Primeiros passos — como tudo se conecta"}
                   </p>
                   <p className="text-xs text-muted">
-                    {tudoPronto
-                      ? "Todos os módulos estão prontos para uso."
-                      : `${totalConcluidos} de 5 etapas concluídas`}
+                    {tudoPronto ? "Todos os módulos estão prontos para uso." : `${totalConcluidos} de 5 etapas concluídas`}
                   </p>
                 </div>
               </div>
@@ -180,12 +174,13 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 )}
-                {guiaAberto ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
+                <button onClick={() => setGuiaAberto(false)} className="p-1 rounded-md hover:bg-rose-light text-muted hover:text-dark transition" title="Fechar">
+                  <ChevronUp size={15} />
+                </button>
               </div>
-            </button>
+            </div>
 
-            {guiaAberto && (
-              <div className="border-t border-rose-light/40 divide-y divide-rose-light/40">
+            <div className="divide-y divide-rose-light/40">
                 {PASSOS.map((passo, i) => {
                   const ok = concluidos[i];
                   const aberto = passoAberto === passo.num;
@@ -238,7 +233,6 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
-            )}
           </div>
         )}
 
