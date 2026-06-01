@@ -72,6 +72,7 @@ export interface Produto {
   custoProduto: number;
   cmvPercent: number;
   descricao?: string;
+  imagemUrl?: string;
   prazoProduzDias: number;
   status: "ativo" | "encomenda" | "inativo";
   createdAt: Date;

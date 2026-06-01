@@ -168,6 +168,13 @@ export default function ProdutosPage() {
             <label className="field-label">Descrição para catálogo</label>
             <textarea className="field-input resize-none h-14" value={form.descricao} onChange={e => setForm(f=>({...f,descricao:e.target.value}))} placeholder="Descrição para o catálogo..." />
           </div>
+          <div>
+            <label className="field-label">URL da foto (opcional)</label>
+            <input className="field-input" value={form.imagemUrl ?? ""} onChange={e => setForm(f=>({...f,imagemUrl:e.target.value}))} placeholder="https://..." />
+            {form.imagemUrl && (
+              <img src={form.imagemUrl} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl border border-rose-light" onError={e => (e.currentTarget.style.display = "none")} />
+            )}
+          </div>
           <div className="flex gap-2 pt-2 border-t border-rose-light/60">
             <button onClick={() => setModal(false)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">Cancelar</button>
             <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
