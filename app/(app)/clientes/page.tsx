@@ -90,9 +90,16 @@ export default function ClientesPage() {
         </div>
 
         {filtrados.length === 0 ? (
-          <div className="bg-white rounded-xl border border-rose-light/60 p-10 text-center">
+          <div className="bg-white rounded-xl border-2 border-dashed border-rose-light p-10 text-center">
             <p className="text-4xl mb-3">👥</p>
-            <p className="text-muted text-sm">{busca ? "Nenhum cliente encontrado." : "Nenhum cliente cadastrado ainda."}</p>
+            <p className="text-muted text-sm mb-4">
+              {busca ? "Nenhum cliente encontrado." : "Nenhum cliente cadastrado ainda."}
+            </p>
+            {!busca && (
+              <button onClick={openNew} className="inline-flex items-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+                <Plus size={14} /> Cadastrar primeiro cliente
+              </button>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-rose-light/60 overflow-hidden">
@@ -123,6 +130,9 @@ export default function ClientesPage() {
                   </div>
                 </div>
               ))}
+              <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose-DEFAULT hover:bg-cream/50 transition font-medium">
+                <Plus size={13} /> Adicionar cliente
+              </button>
             </div>
           </div>
         )}

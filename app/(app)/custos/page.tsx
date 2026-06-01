@@ -21,12 +21,6 @@ function cmvCor(cmv: number) {
   return "text-red-500";
 }
 
-function cmvBg(cmv: number) {
-  if (cmv <= 25) return "bg-emerald-50 border-emerald-200";
-  if (cmv <= 35) return "bg-amber-50 border-amber-200";
-  return "bg-red-50 border-red-200";
-}
-
 const MESES = Array.from({ length: 6 }, (_, i) => {
   const d = new Date();
   d.setMonth(d.getMonth() - i);
