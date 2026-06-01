@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
 import { updateConta } from "@/lib/firestore";
-import { seedDados } from "@/lib/seed";
+import { seedDados, limparDados } from "@/lib/seed";
 import { Topbar } from "@/components/layout/Topbar";
-import { Save, FlaskConical } from "lucide-react";
+import { Save, FlaskConical, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ConfigPage() {
@@ -14,6 +14,7 @@ export default function ConfigPage() {
   const [instagram, setInstagram] = useState("");
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     if (!conta) return;
@@ -34,6 +35,21 @@ export default function ConfigPage() {
       toast.error("Erro ao carregar dados. Verifique o Firebase.");
     } finally {
       setSeeding(false);
+    }
+  }
+
+  async function handleClear() {
+    if (!conta) return;
+    if (!confirm("Isso vai apagar TODOS os dados (insumos, receitas, produtos, clientes e pedidos). Confirmar?")) return;
+    setClearing(true);
+    try {
+      await limparDados(conta.id);
+      toast.success("Todos os dados foram apagados.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao apagar dados.");
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -98,11 +114,19 @@ export default function ConfigPage() {
           </div>
           <button
             onClick={handleSeed}
-            disabled={seeding}
+            disabled={seeding || clearing}
             className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-rose-mid/40 hover:border-rose-DEFAULT hover:bg-rose-light/20 text-rose-DEFAULT text-sm font-semibold py-2.5 rounded-xl transition disabled:opacity-60"
           >
             <FlaskConical size={15} />
             {seeding ? "Carregando dados..." : "Carregar dados de exemplo"}
+          </button>
+          <button
+            onClick={handleClear}
+            disabled={clearing || seeding}
+            className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-600 hover:bg-red-50 text-sm font-medium py-2 rounded-xl transition disabled:opacity-60 mt-1"
+          >
+            <Trash2 size={14} />
+            {clearing ? "Apagando..." : "Apagar todos os dados"}
           </button>
         </div>
 

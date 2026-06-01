@@ -14,6 +14,16 @@ async function limparColecao(contaId: string, sub: string) {
   await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
 }
 
+export async function limparDados(contaId: string) {
+  await Promise.all([
+    limparColecao(contaId, "insumos"),
+    limparColecao(contaId, "receitas"),
+    limparColecao(contaId, "produtos"),
+    limparColecao(contaId, "clientes"),
+    limparColecao(contaId, "pedidos"),
+  ]);
+}
+
 export async function seedDados(contaId: string) {
   // Limpa dados existentes
   await Promise.all([
