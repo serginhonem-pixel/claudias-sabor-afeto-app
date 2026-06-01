@@ -4,6 +4,7 @@ export interface Conta {
   nome: string;
   telefone?: string;
   instagram?: string;
+  fcmToken?: string;
   createdAt: Date;
   ativo: boolean;
 }

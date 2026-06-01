@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserConta } from "@/lib/firestore";
 import { ContaContext } from "@/hooks/useConta";
+import { useFCM } from "@/hooks/useFCM";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "react-hot-toast";
 import type { Conta } from "@/types";
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
   const [conta, setConta] = useState<Conta | null>(null);
+  useFCM(conta?.id);
   const [contaLoading, setContaLoading] = useState(true);
   const [maisAberto, setMaisAberto] = useState(false);
 

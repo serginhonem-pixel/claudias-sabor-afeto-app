@@ -128,6 +128,23 @@ export default function PedidoClientePage() {
       const telefone = conta?.telefone?.replace(/\D/g, "") ?? "";
       if (telefone) window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`, "_blank");
 
+      // Notificar dono via email + push
+      fetch("/api/notificar-pedido", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          numero,
+          clienteNome: nome.trim(),
+          clienteWhatsapp: whatsapp.trim(),
+          dataEntrega,
+          itens,
+          total,
+          obs: obs.trim(),
+          personalizacao: personalizacao.trim(),
+          fcmToken: conta?.fcmToken ?? null,
+        }),
+      }).catch(console.error);
+
       setStep("confirmado");
     } catch (e) {
       console.error(e);
