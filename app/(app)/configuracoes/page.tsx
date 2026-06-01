@@ -1,5 +1,102 @@
 "use client";
+import { useEffect, useState } from "react";
+import { useConta } from "@/hooks/useConta";
+import { updateConta } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
+import { Save } from "lucide-react";
+import toast from "react-hot-toast";
+
 export default function ConfigPage() {
-  return <><Topbar title="Configurações" /><div className="p-6 text-muted text-sm">Em breve — Configurações</div></>;
+  const { conta } = useConta();
+  const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!conta) return;
+    setNome(conta.nome ?? "");
+    setTelefone(conta.telefone ?? "");
+    setInstagram(conta.instagram ?? "");
+  }, [conta]);
+
+  async function handleSave() {
+    if (!conta) return;
+    if (!nome.trim()) { toast.error("Informe o nome do negócio"); return; }
+    setSaving(true);
+    try {
+      await updateConta(conta.id, { nome: nome.trim(), telefone, instagram });
+      toast.success("Configurações salvas!");
+    } catch { toast.error("Erro ao salvar"); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <>
+      <Topbar title="Configurações" />
+
+      <div className="p-4 md:p-6 max-w-xl space-y-6">
+
+        {/* Dados do negócio */}
+        <div className="bg-white rounded-xl border border-rose-light/60 p-5">
+          <h2 className="font-heading font-semibold text-dark text-sm mb-4">Dados do Negócio</h2>
+          <div className="space-y-3">
+            <div>
+              <label className="field-label">Nome do negócio</label>
+              <input className="field-input" value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Claudia's Sabor e Afeto" />
+            </div>
+            <div>
+              <label className="field-label">WhatsApp / Telefone</label>
+              <input className="field-input" value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(11) 99999-9999" />
+            </div>
+            <div>
+              <label className="field-label">Instagram</label>
+              <input className="field-input" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@claudias.sabor" />
+            </div>
+          </div>
+          <button onClick={handleSave} disabled={saving}
+            className="mt-4 w-full flex items-center justify-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+            <Save size={14} />
+            {saving ? "Salvando..." : "Salvar Configurações"}
+          </button>
+        </div>
+
+        {/* Sobre o app */}
+        <div className="bg-white rounded-xl border border-rose-light/60 p-5">
+          <h2 className="font-heading font-semibold text-dark text-sm mb-3">Sobre o App</h2>
+          <div className="space-y-2 text-xs text-muted">
+            <div className="flex justify-between">
+              <span>Versão</span><span className="font-medium text-dark">0.1.0</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Banco de dados</span><span className="font-medium text-dark">Firebase Firestore</span>
+            </div>
+            <div className="flex justify-between">
+              <span>ID da conta</span><span className="font-mono text-[0.65rem] text-dark">{conta?.id ?? "—"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Guia de CMV */}
+        <div className="bg-rose-light/30 rounded-xl border border-rose-light p-5">
+          <h2 className="font-heading font-semibold text-dark text-sm mb-2">📊 Referência de CMV</h2>
+          <div className="space-y-1.5 text-xs text-muted">
+            <p><strong className="text-emerald-600">≤ 25%</strong> — Excelente. Alta margem de contribuição.</p>
+            <p><strong className="text-amber-600">26–35%</strong> — Aceitável para confeitaria artesanal.</p>
+            <p><strong className="text-red-500">&gt; 35%</strong> — Atenção! Revise o preço ou reduza custos.</p>
+          </div>
+          <p className="text-xs text-muted mt-3">
+            Para melhorar a precisão dos custos, cadastre os insumos em <strong className="text-dark">Estoque</strong>,
+            crie as fichas técnicas em <strong className="text-dark">Receitas</strong> e vincule aos produtos.
+          </p>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .field-label{display:block;font-size:.7rem;font-weight:600;color:#7A6860;margin-bottom:.35rem}
+        .field-input{width:100%;border:1px solid #FAEDEF;border-radius:10px;padding:.5rem .75rem;font-size:.82rem;outline:none;transition:border .15s;background:#fff}
+        .field-input:focus{border-color:#E8A0AE;box-shadow:0 0 0 3px rgba(196,86,106,.08)}
+      `}</style>
+    </>
+  );
 }
