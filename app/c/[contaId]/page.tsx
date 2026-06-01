@@ -70,7 +70,6 @@ export default function PedidoClientePage() {
   const totalItens = carrinho.reduce((s, i) => s + i.quantidade, 0);
 
   const catsComProdutos = CATS.filter(c => produtos.some(p => p.categoria === c));
-  const produtosFiltrados = catAtiva === "todas" ? produtos : produtos.filter(p => p.categoria === catAtiva);
 
   function scrollToCategoria(cat: string) {
     setCatAtiva(cat);

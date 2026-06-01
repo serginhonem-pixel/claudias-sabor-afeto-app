@@ -172,6 +172,7 @@ export default function ProdutosPage() {
             <label className="field-label">URL da foto (opcional)</label>
             <input className="field-input" value={form.imagemUrl ?? ""} onChange={e => setForm(f=>({...f,imagemUrl:e.target.value}))} placeholder="https://..." />
             {form.imagemUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={form.imagemUrl} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl border border-rose-light" onError={e => (e.currentTarget.style.display = "none")} />
             )}
           </div>
