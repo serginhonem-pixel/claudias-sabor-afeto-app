@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { getUserConta } from "@/lib/firestore";
 import { ContaContext } from "@/hooks/useConta";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "react-hot-toast";
@@ -10,26 +11,51 @@ import { ShoppingBag, LayoutDashboard, Cake, Package, MoreHorizontal, LogOut } f
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const CONTA_DEMO: Conta = {
-  id: "demo",
-  nome: "Claudia's Sabor e Afeto",
-  telefone: "(11) 99999-9999",
-  createdAt: new Date(),
-  ativo: true,
-};
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
+  const [conta, setConta] = useState<Conta | null>(null);
+  const [contaLoading, setContaLoading] = useState(true);
   const [maisAberto, setMaisAberto] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+    getUserConta(user.uid)
+      .then(c => {
+        if (!c) {
+          router.replace("/onboarding");
+          return;
+        }
+        setConta(c);
+      })
+      .catch(() => router.replace("/login"))
+      .finally(() => setContaLoading(false));
+  }, [user, authLoading, router]);
 
   async function handleSignOut() {
     await signOut();
     router.replace("/login");
   }
 
+  if (authLoading || contaLoading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-rose-light border-t-rose rounded-full animate-spin mx-auto" />
+          <p className="text-muted text-sm">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !conta) return null;
+
   return (
-    <ContaContext.Provider value={{ conta: CONTA_DEMO, loading: false }}>
+    <ContaContext.Provider value={{ conta, loading: false }}>
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: "DM Sans, sans-serif", fontSize: "13px" } }} />
       <div className="flex min-h-screen bg-cream">
         <div className="hidden md:flex">
@@ -53,9 +79,9 @@ function BottomNav({ onSignOut, maisAberto, setMaisAberto }: { onSignOut: () => 
     { href: "/estoque",   icon: Package,         label: "Estoque" },
   ];
   const extras = [
-    { href: "/receitas",  emoji: "📖", label: "Receitas" },
-    { href: "/custos",    emoji: "📊", label: "Custos" },
-    { href: "/clientes",  emoji: "👥", label: "Clientes" },
+    { href: "/receitas",      emoji: "📖", label: "Receitas" },
+    { href: "/custos",        emoji: "📊", label: "Custos" },
+    { href: "/clientes",      emoji: "👥", label: "Clientes" },
     { href: "/configuracoes", emoji: "⚙️", label: "Config." },
   ];
 
