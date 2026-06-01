@@ -174,11 +174,11 @@ export default function PedidoClientePage() {
       <Toaster position="top-center" />
 
       {/* Header */}
-      <div className="bg-[#2A1F1A] text-white px-4 py-5 text-center">
-        <div className="flex justify-center mb-3">
-          <Image src="/logo.png" alt={conta.nome} width={140} height={60} className="object-contain brightness-0 invert" />
+      <div className="bg-[#FDF8F4] border-b border-[#FAEDEF] px-4 py-5 text-center">
+        <div className="flex justify-center mb-2">
+          <Image src="/logo.png" alt={conta.nome} width={180} height={75} className="object-contain" />
         </div>
-        <p className="text-white/60 text-xs">Faça seu pedido diretamente conosco 🎂</p>
+        <p className="text-[#7A6860] text-xs">Faça seu pedido diretamente conosco 🎂</p>
       </div>
 
       {/* Stepper */}
