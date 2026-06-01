@@ -188,10 +188,9 @@ export default function PedidosPage() {
       {/* FAB */}
       <button
         onClick={openNew}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 w-14 h-14 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-105 active:scale-95"
-        title="Novo pedido"
+        className="fixed bottom-24 right-4 md:bottom-8 md:right-6 z-[60] flex items-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl transition hover:scale-105 active:scale-95"
       >
-        <Plus size={24} />
+        <Plus size={18} /> Novo Pedido
       </button>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editando ? "Editar Pedido" : "Novo Pedido"} size="lg">
