@@ -113,12 +113,12 @@ export default function DashboardPage() {
         <>
           <button
             onClick={() => setGuiaAberto(v => !v)}
-            className="flex items-center gap-1.5 border border-rose-light hover:border-rose-mid text-muted hover:text-rose-DEFAULT text-xs font-semibold px-3 py-1.5 rounded-lg transition bg-white"
+            className="flex items-center gap-1.5 border border-rose-light hover:border-rose-mid text-muted hover:text-rose text-xs font-semibold px-3 py-1.5 rounded-lg transition bg-white"
             title="Primeiros passos"
           >
             <Map size={13} /> Guia
           </button>
-          <Link href="/pedidos" className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+          <Link href="/pedidos" className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
             + Novo Pedido
           </Link>
         </>
@@ -128,8 +128,8 @@ export default function DashboardPage() {
         {/* Alert atrasados */}
         {atrasados.length > 0 && (
           <div className="bg-rose-light border border-rose-mid/30 rounded-xl px-4 py-3 flex items-center gap-3">
-            <span className="text-rose-DEFAULT text-lg">⚠️</span>
-            <p className="text-sm text-rose-DEFAULT font-medium">
+            <span className="text-rose text-lg">⚠️</span>
+            <p className="text-sm text-rose font-medium">
               {atrasados.length} pedido{atrasados.length > 1 ? "s" : ""} em atraso — verifique a aba de pedidos
             </p>
           </div>
@@ -138,10 +138,10 @@ export default function DashboardPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Pedidos Ativos",  value: ativos.length,       sub: `${entregaHoje.length} entregam hoje`, color: "text-rose-DEFAULT" },
+            { label: "Pedidos Ativos",  value: ativos.length,       sub: `${entregaHoje.length} entregam hoje`, color: "text-rose" },
             { label: "Faturamento Mês", value: fmt(faturamentoMes), sub: format(new Date(), "MMMM yyyy", { locale: ptBR }), color: "text-emerald-600" },
             { label: "Entrega Hoje",    value: entregaHoje.length,  sub: "pedidos para hoje", color: "text-caramel-DEFAULT" },
-            { label: "Em Atraso",       value: atrasados.length,    sub: atrasados.length > 0 ? "atenção necessária" : "tudo em dia ✓", color: atrasados.length > 0 ? "text-rose-DEFAULT" : "text-emerald-600" },
+            { label: "Em Atraso",       value: atrasados.length,    sub: atrasados.length > 0 ? "atenção necessária" : "tudo em dia ✓", color: atrasados.length > 0 ? "text-rose" : "text-emerald-600" },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-rose-light/60 p-4">
               <p className="text-xs text-muted mb-1">{s.label}</p>
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                 {!tudoPronto && (
                   <div className="hidden sm:flex gap-0.5">
                     {concluidos.map((ok, i) => (
-                      <div key={i} className={`w-5 h-1.5 rounded-full ${ok ? "bg-rose-DEFAULT" : "bg-rose-light"}`} />
+                      <div key={i} className={`w-5 h-1.5 rounded-full ${ok ? "bg-[#C4566A]" : "bg-rose-light"}`} />
                     ))}
                   </div>
                 )}
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                           </div>
                           <Link
                             href={passo.href}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-DEFAULT hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose hover:underline"
                           >
                             {passo.cta} <ArrowRight size={12} />
                           </Link>
@@ -240,12 +240,12 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-rose-light/60 overflow-hidden">
           <div className="px-5 py-3 border-b border-rose-light/40 flex items-center justify-between">
             <p className="font-semibold text-sm text-dark">Pedidos Recentes</p>
-            <Link href="/pedidos" className="text-xs text-rose-DEFAULT hover:underline">Ver todos →</Link>
+            <Link href="/pedidos" className="text-xs text-rose hover:underline">Ver todos →</Link>
           </div>
           {ativos.length === 0 ? (
             <p className="text-center text-muted text-sm py-10">
               Nenhum pedido ativo.{" "}
-              <Link href="/pedidos" className="text-rose-DEFAULT hover:underline">Criar pedido</Link>
+              <Link href="/pedidos" className="text-rose hover:underline">Criar pedido</Link>
             </p>
           ) : (
             <div className="divide-y divide-rose-light/40">

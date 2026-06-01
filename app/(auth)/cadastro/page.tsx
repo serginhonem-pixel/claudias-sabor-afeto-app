@@ -51,8 +51,8 @@ export default function CadastroPage() {
         </div>
 
         <div className="flex gap-2 mb-6">
-          <div className={`flex-1 h-1 rounded-full ${step >= 1 ? "bg-rose-DEFAULT" : "bg-rose-light"}`} />
-          <div className={`flex-1 h-1 rounded-full ${step >= 2 ? "bg-rose-DEFAULT" : "bg-rose-light"}`} />
+          <div className={`flex-1 h-1 rounded-full ${step >= 1 ? "bg-rose" : "bg-rose-light"}`} />
+          <div className={`flex-1 h-1 rounded-full ${step >= 2 ? "bg-rose" : "bg-rose-light"}`} />
         </div>
 
         <form onSubmit={step === 1 ? (e) => { e.preventDefault(); setStep(2); } : handleCadastro}
@@ -69,7 +69,7 @@ export default function CadastroPage() {
                 <label className="block text-xs font-semibold text-muted mb-1.5">Senha</label>
                 <input type="password" value={senha} onChange={e => setSenha(e.target.value)} required minLength={6} className={input} placeholder="Mínimo 6 caracteres" />
               </div>
-              <button type="submit" className="w-full bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white font-semibold py-3 rounded-xl text-sm transition">
+              <button type="submit" className="w-full bg-rose hover:bg-rose/90 text-white font-semibold py-3 rounded-xl text-sm transition">
                 Continuar →
               </button>
             </>
@@ -92,7 +92,7 @@ export default function CadastroPage() {
                   Voltar
                 </button>
                 <button type="submit" disabled={loading}
-                  className="flex-1 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm transition">
+                  className="flex-1 bg-rose hover:bg-rose/90 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm transition">
                   {loading ? "Criando..." : "Criar conta"}
                 </button>
               </div>
@@ -102,7 +102,7 @@ export default function CadastroPage() {
 
         <p className="text-center text-sm text-muted mt-4">
           Já tem conta?{" "}
-          <Link href="/login" className="text-rose-DEFAULT font-semibold hover:underline">Entrar</Link>
+          <Link href="/login" className="text-rose font-semibold hover:underline">Entrar</Link>
         </p>
       </div>
     </main>

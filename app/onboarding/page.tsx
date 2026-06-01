@@ -46,7 +46,7 @@ export default function OnboardingPage() {
             <label className="block text-xs font-semibold text-muted mb-1.5">WhatsApp</label>
             <input type="tel" value={telefone} onChange={e => setTelefone(e.target.value)} className={input} placeholder="(27) 99999-9999" />
           </div>
-          <button type="submit" disabled={loading} className="w-full bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm transition">
+          <button type="submit" disabled={loading} className="w-full bg-rose hover:bg-rose/90 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm transition">
             {loading ? "Configurando..." : "Começar →"}
           </button>
         </form>

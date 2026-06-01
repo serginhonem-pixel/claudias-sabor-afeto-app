@@ -73,7 +73,7 @@ export default function ClientesPage() {
   return (
     <>
       <Topbar title="Clientes" actions={
-        <button onClick={openNew} className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+        <button onClick={openNew} className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
           <Plus size={13} /> Cadastrar
         </button>
       } />
@@ -96,7 +96,7 @@ export default function ClientesPage() {
               {busca ? "Nenhum cliente encontrado." : "Nenhum cliente cadastrado ainda."}
             </p>
             {!busca && (
-              <button onClick={openNew} className="inline-flex items-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+              <button onClick={openNew} className="inline-flex items-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
                 <Plus size={14} /> Cadastrar primeiro cliente
               </button>
             )}
@@ -107,7 +107,7 @@ export default function ClientesPage() {
               {filtrados.map(c => (
                 <div key={c.id} className="flex items-center gap-4 px-5 py-3 hover:bg-cream/50 transition">
                   <div className="w-9 h-9 rounded-full bg-rose-light flex items-center justify-center shrink-0">
-                    <span className="text-rose-DEFAULT font-semibold text-sm">{c.nome.charAt(0).toUpperCase()}</span>
+                    <span className="text-rose font-semibold text-sm">{c.nome.charAt(0).toUpperCase()}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-dark text-sm">{c.nome}</p>
@@ -121,7 +121,7 @@ export default function ClientesPage() {
                       className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition" title="WhatsApp">
                       <MessageCircle size={14} />
                     </a>
-                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose-DEFAULT transition">
+                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
                       <Pencil size={14} />
                     </button>
                     <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
@@ -130,7 +130,7 @@ export default function ClientesPage() {
                   </div>
                 </div>
               ))}
-              <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose-DEFAULT hover:bg-cream/50 transition font-medium">
+              <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose hover:bg-cream/50 transition font-medium">
                 <Plus size={13} /> Adicionar cliente
               </button>
             </div>
@@ -181,7 +181,7 @@ export default function ClientesPage() {
           </div>
           <div className="flex gap-2 pt-2 border-t border-rose-light/60">
             <button onClick={() => setModal(false)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">Cancelar</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+            <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>

@@ -50,13 +50,13 @@ export default function LoginPage() {
             <input type="password" value={senha} onChange={e => setSenha(e.target.value)} required className={input} placeholder="••••••••" />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm transition">
+            className="w-full bg-rose hover:bg-rose/90 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm transition">
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
         <p className="text-center text-sm text-muted mt-4">
           Não tem conta?{" "}
-          <Link href="/cadastro" className="text-rose-DEFAULT font-semibold hover:underline">Criar conta</Link>
+          <Link href="/cadastro" className="text-rose font-semibold hover:underline">Criar conta</Link>
         </p>
       </div>
     </main>

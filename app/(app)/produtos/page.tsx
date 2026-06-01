@@ -56,14 +56,14 @@ export default function ProdutosPage() {
   const filtrados = filtro === "todos" ? produtos : produtos.filter(p => p.categoria === filtro);
 
   const catCls: Record<string,string> = {
-    Confeitaria:"bg-rose-light text-rose-DEFAULT", Salgado:"bg-amber-50 text-amber-700",
+    Confeitaria:"bg-rose-light text-rose", Salgado:"bg-amber-50 text-amber-700",
     Panificado:"bg-slate-100 text-slate-600", Kit:"bg-blue-50 text-blue-700", Outro:"bg-slate-100 text-slate-500",
   };
 
   return (
     <>
       <Topbar title="Produtos" actions={
-        <button onClick={openNew} className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+        <button onClick={openNew} className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
           <Plus size={13}/> Cadastrar
         </button>
       }/>
@@ -71,7 +71,7 @@ export default function ProdutosPage() {
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
           {["todos",...CATS].map(c => (
             <button key={c} onClick={() => setFiltro(c)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro===c?"bg-rose-DEFAULT text-white border-rose-DEFAULT":"bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro===c?"bg-[#C4566A] text-white border-rose":"bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
               {c === "todos" ? "Todos" : c}
             </button>
           ))}
@@ -92,13 +92,13 @@ export default function ProdutosPage() {
                 <span>CMV: <strong className={p.cmvPercent > 35 ? "text-amber-600" : "text-emerald-600"}>{p.cmvPercent}%</strong></span>
                 <span>Prazo: {p.prazoProduzDias}d</span>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(p)} className="p-1 hover:bg-rose-light rounded text-muted hover:text-rose-DEFAULT transition"><Pencil size={12}/></button>
+                  <button onClick={() => openEdit(p)} className="p-1 hover:bg-rose-light rounded text-muted hover:text-rose transition"><Pencil size={12}/></button>
                   <button onClick={() => handleDelete(p.id)} className="p-1 hover:bg-red-50 rounded text-muted hover:text-red-500 transition"><Trash2 size={12}/></button>
                 </div>
               </div>
             </div>
           ))}
-          <button onClick={openNew} className="bg-white rounded-xl border-2 border-dashed border-rose-light hover:border-rose-mid flex flex-col items-center justify-center gap-2 p-6 min-h-[120px] transition text-muted hover:text-rose-DEFAULT">
+          <button onClick={openNew} className="bg-white rounded-xl border-2 border-dashed border-rose-light hover:border-rose-mid flex flex-col items-center justify-center gap-2 p-6 min-h-[120px] transition text-muted hover:text-rose">
             <Plus size={24}/><span className="text-xs font-medium">Novo Produto</span>
           </button>
         </div>
@@ -170,7 +170,7 @@ export default function ProdutosPage() {
           </div>
           <div className="flex gap-2 pt-2 border-t border-rose-light/60">
             <button onClick={() => setModal(false)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">Cancelar</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+            <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>

@@ -117,7 +117,7 @@ export default function PedidosPage() {
   return (
     <>
       <Topbar title="Pedidos" actions={
-        <button onClick={openNew} className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+        <button onClick={openNew} className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
           <Plus size={13} /> Novo Pedido
         </button>
       } />
@@ -129,7 +129,7 @@ export default function PedidosPage() {
             const count = s === "todos" ? pedidos.length : pedidos.filter(p => p.status === s).length;
             return (
               <button key={s} onClick={() => setFiltro(s)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === s ? "bg-rose-DEFAULT text-white border-rose-DEFAULT" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === s ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
                 {s === "todos" ? "Todos" : STATUS[s].label} ({count})
               </button>
             );
@@ -163,7 +163,7 @@ export default function PedidosPage() {
                   <p className="font-heading font-semibold text-lg text-dark">{fmt(p.totalFinal)}</p>
                   <div className="flex gap-1 mt-2 justify-end">
                     {p.status !== "entregue" && p.status !== "cancelado" && (
-                      <button onClick={() => avancarStatus(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-rose-DEFAULT transition" title="Avançar status">
+                      <button onClick={() => avancarStatus(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-rose transition" title="Avançar status">
                         <CheckCircle2 size={14} />
                       </button>
                     )}
@@ -171,7 +171,7 @@ export default function PedidosPage() {
                       className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition" title="WhatsApp">
                       <MessageCircle size={14} />
                     </a>
-                    <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose-DEFAULT transition">
+                    <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
                       <Pencil size={14} />
                     </button>
                     <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
@@ -219,7 +219,7 @@ export default function PedidosPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="field-label mb-0">Itens do Pedido *</label>
-              <button type="button" onClick={addItem} className="text-xs text-rose-DEFAULT font-semibold hover:underline flex items-center gap-1">
+              <button type="button" onClick={addItem} className="text-xs text-rose font-semibold hover:underline flex items-center gap-1">
                 <Plus size={11} /> Adicionar
               </button>
             </div>
@@ -269,13 +269,13 @@ export default function PedidosPage() {
           {total > 0 && (
             <div className="bg-rose-light/50 rounded-xl px-4 py-3 flex justify-between items-center">
               <span className="text-sm text-muted">Total Final</span>
-              <span className="font-heading font-bold text-xl text-rose-DEFAULT">{fmt(totalFinal)}</span>
+              <span className="font-heading font-bold text-xl text-rose">{fmt(totalFinal)}</span>
             </div>
           )}
 
           <div className="flex gap-2 pt-2 border-t border-rose-light/60">
             <button onClick={() => setModal(false)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">Cancelar</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+            <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
               {saving ? "Salvando..." : "Salvar Pedido"}
             </button>
           </div>

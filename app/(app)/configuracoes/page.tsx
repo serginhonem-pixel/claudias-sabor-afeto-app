@@ -88,7 +88,7 @@ export default function ConfigPage() {
             </div>
           </div>
           <button onClick={handleSave} disabled={saving}
-            className="mt-4 w-full flex items-center justify-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+            className="mt-4 w-full flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
             <Save size={14} />
             {saving ? "Salvando..." : "Salvar Configurações"}
           </button>
@@ -97,7 +97,7 @@ export default function ConfigPage() {
         {/* Dados de exemplo */}
         <div className="bg-white rounded-xl border border-rose-light/60 p-5">
           <div className="flex items-start gap-3 mb-4">
-            <FlaskConical size={18} className="text-rose-DEFAULT mt-0.5 shrink-0" />
+            <FlaskConical size={18} className="text-rose mt-0.5 shrink-0" />
             <div>
               <h2 className="font-heading font-semibold text-dark text-sm">Dados de Exemplo</h2>
               <p className="text-xs text-muted mt-1">
@@ -115,7 +115,7 @@ export default function ConfigPage() {
           <button
             onClick={handleSeed}
             disabled={seeding || clearing}
-            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-rose-mid/40 hover:border-rose-DEFAULT hover:bg-rose-light/20 text-rose-DEFAULT text-sm font-semibold py-2.5 rounded-xl transition disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-rose-mid/40 hover:border-rose hover:bg-rose-light/20 text-rose text-sm font-semibold py-2.5 rounded-xl transition disabled:opacity-60"
           >
             <FlaskConical size={15} />
             {seeding ? "Carregando dados..." : "Carregar dados de exemplo"}

@@ -59,7 +59,7 @@ export default function CustosPage() {
   const produtosAtivos = produtos.filter(p => p.status !== "inativo");
 
   const catCls: Record<string, string> = {
-    Confeitaria: "bg-rose-light text-rose-DEFAULT",
+    Confeitaria: "bg-rose-light text-rose",
     Salgado: "bg-amber-50 text-amber-700",
     Panificado: "bg-slate-100 text-slate-600",
     Kit: "bg-blue-50 text-blue-700",
@@ -78,7 +78,7 @@ export default function CustosPage() {
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {MESES.map(m => (
               <button key={m} onClick={() => setMesSel(m)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${mesSel === m ? "bg-rose-DEFAULT text-white border-rose-DEFAULT" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${mesSel === m ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
                 {format(new Date(m + "-01"), "MMM/yy", { locale: ptBR })}
               </button>
             ))}
@@ -89,7 +89,7 @@ export default function CustosPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: "Faturamento", value: fmt(faturamentoMes), sub: `${pedidosMes.length} pedidos`, color: "text-emerald-600" },
-            { label: "Custo Total", value: fmt(custoMes), sub: "soma dos custos dos itens", color: "text-rose-DEFAULT" },
+            { label: "Custo Total", value: fmt(custoMes), sub: "soma dos custos dos itens", color: "text-rose" },
             { label: "Margem Bruta", value: fmt(margemBruta), sub: faturamentoMes > 0 ? `${pct(100 - cmvGeral)} da receita` : "—", color: margemBruta >= 0 ? "text-dark" : "text-red-500" },
             { label: "CMV Geral", value: pct(cmvGeral), sub: cmvGeral <= 35 ? "dentro do ideal" : "acima do ideal", color: cmvCor(cmvGeral) },
           ].map(s => (

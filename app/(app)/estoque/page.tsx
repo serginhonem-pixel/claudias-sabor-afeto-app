@@ -73,7 +73,7 @@ export default function EstoquePage() {
   return (
     <>
       <Topbar title="Estoque de Insumos" actions={
-        <button onClick={openNew} className="flex items-center gap-1.5 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+        <button onClick={openNew} className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
           <Plus size={13} /> Cadastrar
         </button>
       } />
@@ -92,7 +92,7 @@ export default function EstoquePage() {
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
           {["todos", ...CATS].map(c => (
             <button key={c} onClick={() => setFiltro(c)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === c ? "bg-rose-DEFAULT text-white border-rose-DEFAULT" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === c ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
               {c === "todos" ? "Todos" : c}
             </button>
           ))}
@@ -104,7 +104,7 @@ export default function EstoquePage() {
             <p className="text-muted text-sm mb-4">
               {filtro === "todos" ? "Nenhum insumo cadastrado ainda." : `Nenhum insumo em "${filtro}".`}
             </p>
-            <button onClick={openNew} className="inline-flex items-center gap-2 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+            <button onClick={openNew} className="inline-flex items-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
               <Plus size={14} /> Cadastrar primeiro insumo
             </button>
           </div>
@@ -140,7 +140,7 @@ export default function EstoquePage() {
                       <span className="text-xs text-muted truncate">{i.fornecedor || "—"}</span>
                     </div>
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose-DEFAULT transition">
+                      <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
                         <Pencil size={13} />
                       </button>
                       <button onClick={() => handleDelete(i.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
@@ -150,7 +150,7 @@ export default function EstoquePage() {
                   </div>
                 );
               })}
-              <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose-DEFAULT hover:bg-cream/50 transition font-medium border-t border-dashed border-rose-light/60">
+              <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose hover:bg-cream/50 transition font-medium border-t border-dashed border-rose-light/60">
                 <Plus size={13} /> Adicionar insumo
               </button>
             </div>
@@ -211,7 +211,7 @@ export default function EstoquePage() {
 
           <div className="flex gap-2 pt-2 border-t border-rose-light/60">
             <button onClick={() => setModal(false)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">Cancelar</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 bg-rose-DEFAULT hover:bg-rose-DEFAULT/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+            <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>

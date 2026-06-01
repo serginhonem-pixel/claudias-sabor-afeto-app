@@ -72,7 +72,7 @@ function BottomNav({ onSignOut, maisAberto, setMaisAberto }: { onSignOut: () => 
               </Link>
             ))}
             <button onClick={() => { setMaisAberto(false); onSignOut(); }}
-              className="flex flex-col items-center gap-1 py-3 rounded-xl bg-white/5 hover:bg-rose-DEFAULT/20 transition">
+              className="flex flex-col items-center gap-1 py-3 rounded-xl bg-white/5 hover:bg-rose/20 transition">
               <LogOut size={18} className="text-rose-mid" />
               <span className="text-[0.6rem] text-rose-mid font-medium">Sair</span>
             </button>
