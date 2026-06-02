@@ -36,7 +36,7 @@ export default function PedidoClientePage() {
   const [obs, setObs] = useState("");
   const [personalizacao, setPersonalizacao] = useState("");
   const [endereco, setEndereco] = useState("");
-  const [numero, setNumero] = useState("");
+  const [numEnd, setNumEnd] = useState("");
   const [complemento, setComplemento] = useState("");
   const [bairro, setBairro] = useState("");
   const [cidade, setCidade] = useState("");
@@ -135,7 +135,7 @@ export default function PedidoClientePage() {
         }),
       }).catch(e => console.error("Erro ao notificar:", e));
 
-      const enderecoCompleto = [endereco.trim(), numero.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
+      const enderecoCompleto = [endereco.trim(), numEnd.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
       const itensTexto = carrinho.map(i => `• ${i.quantidade}x ${i.produto.nome} — ${fmt(i.produto.precoVenda * i.quantidade)}`).join("\n");
       const msg = [
         `🎂 *Novo Pedido #${numero} — ${conta?.nome}*`,
@@ -211,7 +211,7 @@ export default function PedidoClientePage() {
             Seu pedido foi registrado com sucesso. O WhatsApp da <strong>{conta.nome}</strong> foi aberto com todos os detalhes — confirme por lá para garantir sua encomenda!
           </p>
           <button
-            onClick={() => { setStep("menu"); setCarrinho([]); setNome(""); setWhatsapp(""); setObs(""); setPersonalizacao(""); setDataEntrega(""); setEndereco(""); setNumero(""); setComplemento(""); setBairro(""); setCidade(""); }}
+            onClick={() => { setStep("menu"); setCarrinho([]); setNome(""); setWhatsapp(""); setObs(""); setPersonalizacao(""); setDataEntrega(""); setEndereco(""); setNumEnd(""); setComplemento(""); setBairro(""); setCidade(""); }}
             className="w-full bg-[#C4566A] hover:bg-[#b04d60] text-white font-semibold py-3 rounded-2xl text-sm transition"
           >
             Fazer outro pedido
@@ -256,7 +256,7 @@ export default function PedidoClientePage() {
             <div className="space-y-2">
               <div className="grid grid-cols-[1fr_80px] gap-2">
                 <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua / Avenida" />
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={numero} onChange={e => setNumero(e.target.value)} placeholder="Nº" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={numEnd} onChange={e => setNumEnd(e.target.value)} placeholder="Nº" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={complemento} onChange={e => setComplemento(e.target.value)} placeholder="Complemento" />
