@@ -4,7 +4,7 @@ import { useConta } from "@/hooks/useConta";
 import { getPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Pedido, Cliente, Produto, ItemPedido, StatusPedido } from "@/types";
 
@@ -24,6 +24,7 @@ export default function PedidosPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [filtro, setFiltro] = useState<StatusPedido | "todos">("todos");
+  const [vista, setVista] = useState<"lista" | "kanban">("lista");
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Pedido | null>(null);
   const [saving, setSaving] = useState(false);
@@ -122,67 +123,147 @@ export default function PedidosPage() {
         </button>
       } />
 
-      <div className="p-4 md:p-6 max-w-4xl">
-        {/* Filtros */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {(["todos", "aguardando", "producao", "pronto", "entregue", "cancelado"] as const).map(s => {
-            const count = s === "todos" ? pedidos.length : pedidos.filter(p => p.status === s).length;
-            return (
-              <button key={s} onClick={() => setFiltro(s)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === s ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
-                {s === "todos" ? "Todos" : STATUS[s].label} ({count})
-              </button>
-            );
-          })}
+      <div className="p-4 md:p-6 max-w-full">
+
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {(["todos", "aguardando", "producao", "pronto", "entregue", "cancelado"] as const).map(s => {
+              const count = s === "todos" ? pedidos.length : pedidos.filter(p => p.status === s).length;
+              return (
+                <button key={s} onClick={() => setFiltro(s)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === s ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+                  {s === "todos" ? "Todos" : STATUS[s].label} ({count})
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex bg-rose-light/30 rounded-xl p-1 gap-1 shrink-0">
+            <button onClick={() => setVista("lista")} title="Lista"
+              className={`p-1.5 rounded-lg transition ${vista === "lista" ? "bg-white shadow-sm text-dark" : "text-muted hover:text-dark"}`}>
+              <LayoutList size={15} />
+            </button>
+            <button onClick={() => setVista("kanban")} title="Kanban"
+              className={`p-1.5 rounded-lg transition ${vista === "kanban" ? "bg-white shadow-sm text-dark" : "text-muted hover:text-dark"}`}>
+              <Columns size={15} />
+            </button>
+          </div>
         </div>
 
-        {/* Lista */}
-        <div className="space-y-3">
-          {filtrados.length === 0 ? (
-            <div className="bg-white rounded-xl border border-rose-light/60 p-10 text-center">
-              <p className="text-4xl mb-3">🎂</p>
-              <p className="text-muted text-sm">Nenhum pedido encontrado.</p>
-            </div>
-          ) : filtrados.map(p => (
-            <div key={p.id} className="bg-white rounded-xl border border-rose-light/60 p-4 hover:border-rose-mid/40 transition">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono text-muted">#{p.numero}</span>
-                    <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full border ${STATUS[p.status].cls}`}>{STATUS[p.status].label}</span>
-                    {p.dataEntrega < new Date().toISOString().slice(0,10) && p.status !== "entregue" && p.status !== "cancelado" && (
-                      <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Atrasado</span>
-                    )}
+        {/* ── LISTA ── */}
+        {vista === "lista" && (
+          <div className="space-y-3 max-w-4xl">
+            {filtrados.length === 0 ? (
+              <div className="bg-white rounded-xl border border-rose-light/60 p-10 text-center">
+                <p className="text-4xl mb-3">🎂</p>
+                <p className="text-muted text-sm">Nenhum pedido encontrado.</p>
+              </div>
+            ) : filtrados.map(p => (
+              <div key={p.id} className="bg-white rounded-xl border border-rose-light/60 p-4 hover:border-rose-mid/40 transition">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono text-muted">#{p.numero}</span>
+                      <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full border ${STATUS[p.status].cls}`}>{STATUS[p.status].label}</span>
+                      {p.dataEntrega < new Date().toISOString().slice(0,10) && p.status !== "entregue" && p.status !== "cancelado" && (
+                        <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Atrasado</span>
+                      )}
+                    </div>
+                    <p className="font-semibold text-dark">{p.clienteNome}</p>
+                    <p className="text-xs text-muted truncate">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
+                    <p className="text-xs text-muted mt-1">📅 {p.dataEntrega} · {p.formaPagamento}</p>
+                    {p.personalizacao && <p className="text-xs text-caramel-DEFAULT mt-1">✏️ {p.personalizacao}</p>}
                   </div>
-                  <p className="font-semibold text-dark">{p.clienteNome}</p>
-                  <p className="text-xs text-muted truncate">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
-                  <p className="text-xs text-muted mt-1">📅 Entrega: {p.dataEntrega} · {p.formaPagamento}</p>
-                  {p.personalizacao && <p className="text-xs text-caramel-DEFAULT mt-1">✏️ {p.personalizacao}</p>}
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-heading font-semibold text-lg text-dark">{fmt(p.totalFinal)}</p>
-                  <div className="flex gap-1 mt-2 justify-end">
-                    {p.status !== "entregue" && p.status !== "cancelado" && (
-                      <button onClick={() => avancarStatus(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-rose transition" title="Avançar status">
-                        <CheckCircle2 size={14} />
-                      </button>
-                    )}
-                    <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition" title="WhatsApp">
-                      <MessageCircle size={14} />
-                    </a>
-                    <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
-                      <Trash2 size={14} />
-                    </button>
+                  <div className="text-right shrink-0">
+                    <p className="font-heading font-semibold text-lg text-dark">{fmt(p.totalFinal)}</p>
+                    <div className="flex gap-1 mt-2 justify-end">
+                      {p.status !== "entregue" && p.status !== "cancelado" && (
+                        <button onClick={() => avancarStatus(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-rose transition" title="Avançar status"><CheckCircle2 size={14} /></button>
+                      )}
+                      <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition"><MessageCircle size={14} /></a>
+                      <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition"><Pencil size={14} /></button>
+                      <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition"><Trash2 size={14} /></button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── KANBAN ── */}
+        {vista === "kanban" && (
+          <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: "60vh" }}>
+            {(["aguardando", "producao", "pronto", "entregue"] as const).map(col => {
+              const colCfg = {
+                aguardando: { bg: "bg-amber-50",    border: "border-amber-200",   dot: "bg-amber-400",   title: "Aguardando" },
+                producao:   { bg: "bg-blue-50",     border: "border-blue-200",    dot: "bg-blue-500",    title: "Em Produção" },
+                pronto:     { bg: "bg-emerald-50",  border: "border-emerald-200", dot: "bg-emerald-500", title: "Pronto 🎉" },
+                entregue:   { bg: "bg-slate-50",    border: "border-slate-200",   dot: "bg-slate-400",   title: "Entregue" },
+              }[col];
+              const cards = pedidos.filter(p => p.status === col && (filtro === "todos" || filtro === col));
+              return (
+                <div key={col} className="shrink-0 w-72 flex flex-col">
+                  {/* Cabeçalho da coluna */}
+                  <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${colCfg.bg} ${colCfg.border} mb-3`}>
+                    <span className={`w-2.5 h-2.5 rounded-full ${colCfg.dot}`} />
+                    <span className="font-semibold text-dark text-sm flex-1">{colCfg.title}</span>
+                    <span className="text-xs font-bold text-muted bg-white/70 px-2 py-0.5 rounded-full">{cards.length}</span>
+                  </div>
+                  {/* Cards */}
+                  <div className="space-y-3 flex-1">
+                    {cards.length === 0 && (
+                      <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-xs text-muted">
+                        Nenhum pedido
+                      </div>
+                    )}
+                    {cards.map(p => {
+                      const atrasado = p.dataEntrega < new Date().toISOString().slice(0,10) && col !== "entregue";
+                      return (
+                        <div key={p.id} className={`bg-white rounded-xl border p-3.5 shadow-sm hover:shadow-md transition ${atrasado ? "border-red-200" : "border-rose-light/60"}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[0.65rem] font-mono text-muted">#{p.numero}</span>
+                            <div className="flex gap-1">
+                              {atrasado && <span className="text-[0.55rem] font-bold bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full border border-red-200">Atrasado</span>}
+                            </div>
+                          </div>
+                          <p className="font-semibold text-dark text-sm leading-snug">{p.clienteNome}</p>
+                          <div className="mt-1.5 space-y-0.5">
+                            {p.itens.map((it, i) => (
+                              <p key={i} className="text-[0.65rem] text-muted">{it.quantidade}x {it.produtoNome}</p>
+                            ))}
+                          </div>
+                          {p.personalizacao && (
+                            <p className="text-[0.65rem] text-caramel-DEFAULT mt-1.5 bg-amber-50 px-2 py-1 rounded-lg">✏️ {p.personalizacao}</p>
+                          )}
+                          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-rose-light/40">
+                            <div>
+                              <p className="font-bold text-dark text-sm">{fmt(p.totalFinal)}</p>
+                              <p className="text-[0.6rem] text-muted">📅 {p.dataEntrega}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              {col !== "entregue" && (
+                                <button onClick={() => avancarStatus(p)} title="Avançar" className="p-1.5 rounded-lg bg-rose-light hover:bg-rose-mid/30 text-rose transition">
+                                  <CheckCircle2 size={13} />
+                                </button>
+                              )}
+                              <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition">
+                                <MessageCircle size={13} />
+                              </a>
+                              <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
+                                <Pencil size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* FAB */}
