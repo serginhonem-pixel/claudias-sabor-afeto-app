@@ -109,6 +109,26 @@ export default function PedidoClientePage() {
         updatedAt: new Date(),
       });
 
+      // Notifica a dona via email
+      fetch("/api/notificar-pedido", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          numero,
+          clienteNome: nome.trim(),
+          clienteWhatsapp: whatsapp.trim(),
+          dataEntrega,
+          itens: carrinho.map(i => ({
+            quantidade: i.quantidade,
+            produtoNome: i.produto.nome,
+            subtotal: i.produto.precoVenda * i.quantidade,
+          })),
+          total,
+          obs: obs.trim(),
+          personalizacao: personalizacao.trim(),
+        }),
+      }).catch(e => console.error("Erro ao notificar:", e));
+
       const itensTexto = carrinho.map(i => `• ${i.quantidade}x ${i.produto.nome} — ${fmt(i.produto.precoVenda * i.quantidade)}`).join("\n");
       const msg = [
         `🎂 *Novo Pedido #${numero} — ${conta?.nome}*`,
