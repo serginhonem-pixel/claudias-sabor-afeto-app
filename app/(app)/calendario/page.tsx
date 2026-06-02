@@ -7,7 +7,6 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isTod
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Pedido, StatusPedido } from "@/types";
-import Link from "next/link";
 
 const STATUS_CLS: Record<StatusPedido, string> = {
   aguardando: "bg-amber-400",
