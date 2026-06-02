@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
 import { getProdutos, getPedidos } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
-import { format, getDaysInMonth, parseISO, startOfDay } from "date-fns";
+import { format, getDaysInMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Produto, Pedido } from "@/types";
 
