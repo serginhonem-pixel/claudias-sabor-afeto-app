@@ -258,7 +258,7 @@ export default function CustosPage() {
                   <div key={d.dataStr}
                     className={`grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-2.5 items-center text-xs transition
                       ${d.isHoje ? "bg-rose-light/20 font-semibold" : ""}
-                      ${!d.isPast ? "opacity-40" : "hover:bg-cream/40"}
+                      ${!d.isPast && d.fatDia === 0 ? "opacity-40" : "hover:bg-cream/40"}
                     `}>
                     <div className="text-center">
                       <p className={`font-bold text-sm ${d.isHoje ? "text-rose" : "text-dark"}`}>{d.dia}</p>
@@ -278,7 +278,7 @@ export default function CustosPage() {
                     </span>
                     <span className="text-amber-600">{fmtShort(d.custFixoDia)}</span>
                     <div className="text-right">
-                      {d.isPast ? (
+                      {d.isPast || d.fatDia > 0 ? (
                         <span className={`font-semibold ${d.resultadoDia >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                           {fmtShort(d.resultadoDia)}
                         </span>
