@@ -7,6 +7,11 @@ import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Pedido, Cliente, Produto, ItemPedido, StatusPedido } from "@/types";
+import {
+  DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent,
+  PointerSensor, useSensor, useSensors, closestCenter,
+} from "@dnd-kit/core";
+import { useDroppable, useDraggable } from "@dnd-kit/core";
 
 const STATUS: Record<StatusPedido, { label: string; cls: string }> = {
   aguardando: { label: "Aguardando",  cls: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -25,6 +30,21 @@ export default function PedidosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [filtro, setFiltro] = useState<StatusPedido | "todos">("todos");
   const [vista, setVista] = useState<"lista" | "kanban">("lista");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  function handleDragStart(e: DragStartEvent) { setDraggingId(e.active.id as string); }
+  function handleDragEnd(e: DragEndEvent) {
+    setDraggingId(null);
+    const { active, over } = e;
+    if (!over || !conta) return;
+    const pedido = pedidos.find(p => p.id === active.id);
+    const novoStatus = over.id as StatusPedido;
+    if (!pedido || pedido.status === novoStatus) return;
+    savePedido(conta.id, { ...pedido, status: novoStatus, updatedAt: new Date() }, pedido.id);
+    toast.success(`→ ${STATUS[novoStatus].label}`);
+  }
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Pedido | null>(null);
   const [saving, setSaving] = useState(false);
@@ -194,76 +214,33 @@ export default function PedidosPage() {
 
         {/* ── KANBAN ── */}
         {vista === "kanban" && (
-          <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: "60vh" }}>
-            {(["aguardando", "producao", "pronto", "entregue"] as const).map(col => {
-              const colCfg = {
-                aguardando: { bg: "bg-amber-50",    border: "border-amber-200",   dot: "bg-amber-400",   title: "Aguardando" },
-                producao:   { bg: "bg-blue-50",     border: "border-blue-200",    dot: "bg-blue-500",    title: "Em Produção" },
-                pronto:     { bg: "bg-emerald-50",  border: "border-emerald-200", dot: "bg-emerald-500", title: "Pronto 🎉" },
-                entregue:   { bg: "bg-slate-50",    border: "border-slate-200",   dot: "bg-slate-400",   title: "Entregue" },
-              }[col];
-              const cards = pedidos.filter(p => p.status === col && (filtro === "todos" || filtro === col));
-              return (
-                <div key={col} className="shrink-0 w-72 flex flex-col">
-                  {/* Cabeçalho da coluna */}
-                  <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${colCfg.bg} ${colCfg.border} mb-3`}>
-                    <span className={`w-2.5 h-2.5 rounded-full ${colCfg.dot}`} />
-                    <span className="font-semibold text-dark text-sm flex-1">{colCfg.title}</span>
-                    <span className="text-xs font-bold text-muted bg-white/70 px-2 py-0.5 rounded-full">{cards.length}</span>
-                  </div>
-                  {/* Cards */}
-                  <div className="space-y-3 flex-1">
-                    {cards.length === 0 && (
-                      <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-xs text-muted">
-                        Nenhum pedido
-                      </div>
-                    )}
-                    {cards.map(p => {
-                      const atrasado = p.dataEntrega < new Date().toISOString().slice(0,10) && col !== "entregue";
-                      return (
-                        <div key={p.id} className={`bg-white rounded-xl border p-3.5 shadow-sm hover:shadow-md transition ${atrasado ? "border-red-200" : "border-rose-light/60"}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[0.65rem] font-mono text-muted">#{p.numero}</span>
-                            <div className="flex gap-1">
-                              {atrasado && <span className="text-[0.55rem] font-bold bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full border border-red-200">Atrasado</span>}
-                            </div>
-                          </div>
-                          <p className="font-semibold text-dark text-sm leading-snug">{p.clienteNome}</p>
-                          <div className="mt-1.5 space-y-0.5">
-                            {p.itens.map((it, i) => (
-                              <p key={i} className="text-[0.65rem] text-muted">{it.quantidade}x {it.produtoNome}</p>
-                            ))}
-                          </div>
-                          {p.personalizacao && (
-                            <p className="text-[0.65rem] text-caramel-DEFAULT mt-1.5 bg-amber-50 px-2 py-1 rounded-lg">✏️ {p.personalizacao}</p>
-                          )}
-                          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-rose-light/40">
-                            <div>
-                              <p className="font-bold text-dark text-sm">{fmt(p.totalFinal)}</p>
-                              <p className="text-[0.6rem] text-muted">📅 {p.dataEntrega}</p>
-                            </div>
-                            <div className="flex gap-1">
-                              {col !== "entregue" && (
-                                <button onClick={() => avancarStatus(p)} title="Avançar" className="p-1.5 rounded-lg bg-rose-light hover:bg-rose-mid/30 text-rose transition">
-                                  <CheckCircle2 size={13} />
-                                </button>
-                              )}
-                              <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition">
-                                <MessageCircle size={13} />
-                              </a>
-                              <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
-                                <Pencil size={13} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-4 gap-3 pb-6" style={{ minHeight: "70vh" }}>
+              {(["aguardando", "producao", "pronto", "entregue"] as const).map(col => {
+                const colCfg = {
+                  aguardando: { bg: "bg-amber-50",   border: "border-amber-200",   dot: "bg-amber-400",   title: "Aguardando" },
+                  producao:   { bg: "bg-blue-50",    border: "border-blue-200",    dot: "bg-blue-500",    title: "Em Produção" },
+                  pronto:     { bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", title: "Pronto 🎉" },
+                  entregue:   { bg: "bg-slate-50",   border: "border-slate-200",   dot: "bg-slate-400",   title: "Entregue" },
+                }[col];
+                const cards = pedidos.filter(p => p.status === col && (filtro === "todos" || filtro === col));
+                return (
+                  <KanbanColuna key={col} id={col} colCfg={colCfg} count={cards.length}>
+                    {cards.map(p => (
+                      <KanbanCard key={p.id} pedido={p} isDragging={draggingId === p.id}
+                        onAvancar={() => avancarStatus(p)} onEdit={() => openEdit(p)} />
+                    ))}
+                  </KanbanColuna>
+                );
+              })}
+            </div>
+            <DragOverlay>
+              {draggingId && (() => {
+                const p = pedidos.find(x => x.id === draggingId);
+                return p ? <KanbanCard pedido={p} isDragging overlay onAvancar={() => {}} onEdit={() => {}} /> : null;
+              })()}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
 
@@ -370,5 +347,93 @@ export default function PedidosPage() {
         `}</style>
       </Modal>
     </>
+  );
+}
+
+// ── Componentes Kanban ─────────────────────────────────────────────────────
+
+function KanbanColuna({ id, colCfg, count, children }: {
+  id: string;
+  colCfg: { bg: string; border: string; dot: string; title: string };
+  count: number;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div className="flex flex-col min-h-0">
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border mb-2 ${colCfg.bg} ${colCfg.border}`}>
+        <span className={`w-2 h-2 rounded-full shrink-0 ${colCfg.dot}`} />
+        <span className="font-semibold text-dark text-xs flex-1 truncate">{colCfg.title}</span>
+        <span className="text-[0.6rem] font-bold text-muted bg-white/70 px-1.5 py-0.5 rounded-full">{count}</span>
+      </div>
+      <div ref={setNodeRef} className={`flex-1 space-y-2 rounded-xl p-1.5 transition-colors min-h-[100px] ${isOver ? "bg-rose-light/30 ring-2 ring-rose-mid/30" : ""}`}>
+        {count === 0 && (
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-muted">
+            Arraste aqui
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function KanbanCard({ pedido: p, isDragging, overlay, onAvancar, onEdit }: {
+  pedido: Pedido;
+  isDragging?: boolean;
+  overlay?: boolean;
+  onAvancar: () => void;
+  onEdit: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: p.id });
+  const atrasado = p.dataEntrega < new Date().toISOString().slice(0, 10) && p.status !== "entregue";
+  const style = transform && !overlay ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined;
+
+  return (
+    <div ref={overlay ? undefined : setNodeRef} style={style}
+      className={`bg-white rounded-xl border p-3 shadow-sm transition select-none
+        ${atrasado ? "border-red-200" : "border-rose-light/60"}
+        ${isDragging ? "opacity-40" : ""}
+        ${overlay ? "shadow-xl rotate-1 scale-105" : "hover:shadow-md"}
+      `}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[0.6rem] font-mono text-muted">#{p.numero}</span>
+        <div className="flex items-center gap-1">
+          {atrasado && <span className="text-[0.5rem] font-bold bg-red-50 text-red-500 px-1 py-0.5 rounded-full border border-red-200">Atrasado</span>}
+          {/* handle de drag */}
+          <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing p-1 rounded text-muted/40 hover:text-muted touch-none">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+              <circle cx="2" cy="2" r="1.2"/><circle cx="8" cy="2" r="1.2"/>
+              <circle cx="2" cy="5" r="1.2"/><circle cx="8" cy="5" r="1.2"/>
+              <circle cx="2" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <p className="font-semibold text-dark text-sm leading-snug">{p.clienteNome}</p>
+      <div className="mt-1 space-y-0.5">
+        {p.itens.map((it, i) => (
+          <p key={i} className="text-[0.6rem] text-muted">{it.quantidade}x {it.produtoNome}</p>
+        ))}
+      </div>
+      {p.personalizacao && (
+        <p className="text-[0.6rem] text-caramel-DEFAULT mt-1.5 bg-amber-50 px-2 py-1 rounded-lg truncate">✏️ {p.personalizacao}</p>
+      )}
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-rose-light/40">
+        <div>
+          <p className="font-bold text-dark text-xs">{p.totalFinal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+          <p className="text-[0.55rem] text-muted">📅 {p.dataEntrega}</p>
+        </div>
+        {!overlay && (
+          <div className="flex gap-1">
+            {p.status !== "entregue" && (
+              <button onClick={onAvancar} className="p-1 rounded-lg bg-rose-light hover:bg-rose-mid/30 text-rose transition"><CheckCircle2 size={12} /></button>
+            )}
+            <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded-lg hover:bg-emerald-50 text-emerald-600 transition"><MessageCircle size={12} /></a>
+            <button onClick={onEdit} className="p-1 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition"><Pencil size={12} /></button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
