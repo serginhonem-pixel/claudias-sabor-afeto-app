@@ -231,7 +231,7 @@ export default function PedidosPage() {
         {/* ── KANBAN ── */}
         {vista === "kanban" && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-4 gap-3 pb-6" style={{ minHeight: "70vh" }}>
+            <div className="flex md:grid md:grid-cols-4 gap-3 pb-6 overflow-x-auto md:overflow-visible" style={{ minHeight: "70vh" }}>
               {(["aguardando", "producao", "pronto", "entregue"] as const).map(col => {
                 const colCfg = {
                   aguardando: { bg: "bg-amber-50",   border: "border-amber-200",   dot: "bg-amber-400",   title: "Aguardando" },
@@ -381,7 +381,7 @@ function KanbanColuna({ id, colCfg, count, children }: {
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div className="flex flex-col min-h-0">
+    <div className="flex flex-col min-h-0 w-72 md:w-auto shrink-0 md:shrink">
       <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border mb-2 ${colCfg.bg} ${colCfg.border}`}>
         <span className={`w-2 h-2 rounded-full shrink-0 ${colCfg.dot}`} />
         <span className="font-semibold text-dark text-xs flex-1 truncate">{colCfg.title}</span>

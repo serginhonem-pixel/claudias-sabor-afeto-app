@@ -154,19 +154,18 @@ export default function ComprasPage() {
                 </div>
                 <div className="divide-y divide-rose-light/40">
                   {exibir.map(n => (
-                    <div key={n.insumoId} className={`grid md:grid-cols-[2fr_1fr_1fr_1fr] gap-2 md:gap-4 px-5 py-3 items-center ${n.ok ? "bg-emerald-50/30" : ""}`}>
-                      <div className="flex items-center gap-2">
+                    <div key={n.insumoId} className={`flex items-center justify-between gap-3 px-4 py-3 ${n.ok ? "bg-emerald-50/30" : ""}`}>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         {n.ok
                           ? <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
                           : <AlertTriangle size={14} className="text-red-500 shrink-0" />
                         }
-                        <span className="font-medium text-dark text-sm">{n.insumoNome}</span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-dark text-sm truncate">{n.insumoNome}</p>
+                          <p className="text-[0.65rem] text-muted">Necessário: {fmt(n.necessario, n.unidade)} · Estoque: <span className={n.emEstoque < n.necessario ? "text-red-500 font-semibold" : "text-emerald-600"}>{fmt(n.emEstoque, n.unidade)}</span></p>
+                        </div>
                       </div>
-                      <span className="text-sm text-muted text-right">{fmt(n.necessario, n.unidade)}</span>
-                      <span className={`text-sm text-right font-medium ${n.emEstoque < n.necessario ? "text-red-500" : "text-emerald-600"}`}>
-                        {fmt(n.emEstoque, n.unidade)}
-                      </span>
-                      <span className={`text-sm text-right font-bold ${n.ok ? "text-emerald-600" : "text-red-600"}`}>
+                      <span className={`text-sm font-bold shrink-0 ${n.ok ? "text-emerald-600" : "text-red-600"}`}>
                         {n.ok ? "✓ ok" : fmt(n.falta, n.unidade)}
                       </span>
                     </div>

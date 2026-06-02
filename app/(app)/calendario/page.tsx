@@ -95,7 +95,7 @@ export default function CalendarioPage() {
             {/* Grid de dias */}
             <div className="grid grid-cols-7">
               {Array.from({ length: offset }).map((_, i) => (
-                <div key={`empty-${i}`} className="border-b border-r border-rose-light/20 min-h-[72px]" />
+                <div key={`empty-${i}`} className="border-b border-r border-rose-light/20 min-h-[52px] md:min-h-[72px]" />
               ))}
               {dias.map(dia => {
                 const str = format(dia, "yyyy-MM-dd");
@@ -106,7 +106,7 @@ export default function CalendarioPage() {
                   <button
                     key={str}
                     onClick={() => setDiaSel(selecionado ? null : str)}
-                    className={`border-b border-r border-rose-light/20 min-h-[72px] p-1.5 text-left transition relative
+                    className={`border-b border-r border-rose-light/20 min-h-[52px] md:min-h-[72px] p-1.5 text-left transition relative
                       ${selecionado ? "bg-rose-light/30 ring-2 ring-inset ring-rose-mid/40" : "hover:bg-cream/50"}
                       ${!isSameMonth(dia, mes) ? "opacity-30" : ""}
                     `}

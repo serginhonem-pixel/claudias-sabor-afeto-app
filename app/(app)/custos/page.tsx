@@ -197,15 +197,18 @@ export default function CustosPage() {
                   </div>
                   <div className="divide-y divide-rose-light/40">
                     {produtosAtivos.sort((a, b) => b.cmvPercent - a.cmvPercent).map(p => (
-                      <div key={p.id} className="grid md:grid-cols-[2fr_1fr_1fr_1fr_120px] gap-2 md:gap-4 px-5 py-3 items-center hover:bg-cream/50 transition">
-                        <div>
-                          <p className="font-semibold text-dark text-sm">{p.nome}</p>
-                          <span className={`text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full ${catCls[p.categoria]}`}>{p.categoria}</span>
+                      <div key={p.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-cream/50 transition md:grid md:grid-cols-[2fr_1fr_1fr_1fr_120px] md:gap-4 md:px-5">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-dark text-sm truncate">{p.nome}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full ${catCls[p.categoria]}`}>{p.categoria}</span>
+                            <span className="text-xs text-muted md:hidden">{fmt(p.precoVenda)}</span>
+                          </div>
                         </div>
-                        <span className="text-sm text-dark">{fmt(p.precoVenda)}</span>
-                        <span className="text-sm text-muted">{fmt(p.custoProduto)}</span>
-                        <span className="text-sm font-semibold text-dark">{fmt(p.precoVenda - p.custoProduto)}</span>
-                        <div className="flex items-center gap-2">
+                        <span className="hidden md:block text-sm text-dark">{fmt(p.precoVenda)}</span>
+                        <span className="hidden md:block text-sm text-muted">{fmt(p.custoProduto)}</span>
+                        <span className="hidden md:block text-sm font-semibold text-dark">{fmt(p.precoVenda - p.custoProduto)}</span>
+                        <div className="flex items-center gap-2 shrink-0 w-24 md:w-auto">
                           <div className="flex-1 h-1.5 bg-rose-light rounded-full overflow-hidden">
                             <div className={`h-full rounded-full ${p.cmvPercent <= 25 ? "bg-emerald-500" : p.cmvPercent <= 35 ? "bg-amber-500" : "bg-red-500"}`}
                               style={{ width: `${Math.min(p.cmvPercent, 100)}%` }} />
@@ -253,13 +256,17 @@ export default function CustosPage() {
 
             {/* Tabela dia a dia */}
             <div className="bg-white rounded-xl border border-rose-light/60 overflow-hidden">
-              <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-2 border-b border-rose-light/40 text-[0.6rem] font-semibold text-muted uppercase tracking-wide">
-                <span>Dia</span><span>Faturamento</span><span>Custo Var.</span><span>Custo Fixo</span><span className="text-right">Resultado</span>
+              {/* Cabeçalho: mobile 3 cols, desktop 5 cols */}
+              <div className="grid grid-cols-[40px_1fr_1fr] md:grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-2 border-b border-rose-light/40 text-[0.6rem] font-semibold text-muted uppercase tracking-wide">
+                <span>Dia</span><span>Faturamento</span>
+                <span className="hidden md:block">Custo Var.</span>
+                <span className="hidden md:block">Custo Fixo</span>
+                <span className="text-right">Resultado</span>
               </div>
               <div className="divide-y divide-rose-light/30 max-h-[480px] overflow-y-auto">
                 {diasData.map(d => (
                   <div key={d.dataStr}
-                    className={`grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-2.5 items-center text-xs transition
+                    className={`grid grid-cols-[40px_1fr_1fr] md:grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-2.5 items-center text-xs transition
                       ${d.isHoje ? "bg-rose-light/20 font-semibold" : ""}
                       ${!d.isPast && d.fatDia === 0 ? "opacity-40" : "hover:bg-cream/40"}
                     `}>
@@ -276,10 +283,10 @@ export default function CustosPage() {
                         <p className="text-[0.55rem] text-muted">{d.pedidosDia.length} pedido{d.pedidosDia.length > 1 ? "s" : ""}</p>
                       )}
                     </div>
-                    <span className={d.custVarDia > 0 ? "text-rose" : "text-muted/40"}>
+                    <span className={`hidden md:block ${d.custVarDia > 0 ? "text-rose" : "text-muted/40"}`}>
                       {d.custVarDia > 0 ? fmtShort(d.custVarDia) : "—"}
                     </span>
-                    <span className="text-amber-600">{fmtShort(d.custFixoDia)}</span>
+                    <span className="hidden md:block text-amber-600">{fmtShort(d.custFixoDia)}</span>
                     <div className="text-right">
                       {d.isPast || d.fatDia > 0 ? (
                         <span className={`font-semibold ${d.resultadoDia >= 0 ? "text-emerald-600" : "text-red-500"}`}>
@@ -294,11 +301,11 @@ export default function CustosPage() {
               </div>
 
               {/* Totais */}
-              <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-t-2 border-rose-light bg-cream/50 text-xs font-bold text-dark">
+              <div className="grid grid-cols-[40px_1fr_1fr] md:grid-cols-[40px_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-t-2 border-rose-light bg-cream/50 text-xs font-bold text-dark">
                 <span className="text-muted text-[0.6rem] self-center">Total</span>
                 <span className="text-emerald-700">{fmt(faturamentoMes)}</span>
-                <span className="text-rose">{fmt(custoVariavel)}</span>
-                <span className="text-amber-600">{fmt(custoFixoMensal)}</span>
+                <span className="hidden md:block text-rose">{fmt(custoVariavel)}</span>
+                <span className="hidden md:block text-amber-600">{fmt(custoFixoMensal)}</span>
                 <span className={`text-right ${margemBruta >= 0 ? "text-emerald-600" : "text-red-500"}`}>{fmt(margemBruta)}</span>
               </div>
             </div>
