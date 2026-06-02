@@ -70,14 +70,16 @@ export default function ConfigPage() {
   }
 
   async function handleSaveCustos() {
-    if (!conta) return;
+    if (!conta) { toast.error("Conta não carregada"); return; }
     const validos = custosFixos.filter(c => c.nome.trim());
     setSavingCustos(true);
     try {
       await updateConta(conta.id, { custosFixos: validos });
       toast.success("Custos fixos salvos!");
-    } catch { toast.error("Erro ao salvar"); }
-    finally { setSavingCustos(false); }
+    } catch (e) {
+      console.error("Erro ao salvar custos fixos:", e);
+      toast.error("Erro ao salvar: " + (e instanceof Error ? e.message : String(e)));
+    } finally { setSavingCustos(false); }
   }
 
   async function handleSave() {
@@ -147,17 +149,15 @@ export default function ConfigPage() {
                     onChange={e => updateCustoFixo(c.id, "nome", e.target.value)}
                     placeholder="Ex: Aluguel, Luz, Gás..."
                   />
-                  <div className="relative shrink-0 w-28">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs">R$</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="field-input pl-8"
-                      value={c.valor}
-                      onChange={e => updateCustoFixo(c.id, "valor", Number(e.target.value))}
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input shrink-0 w-28 text-right"
+                    value={c.valor || ""}
+                    placeholder="0,00"
+                    onChange={e => updateCustoFixo(c.id, "valor", Number(e.target.value))}
+                  />
                   <button onClick={() => removeCustoFixo(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-muted hover:text-red-500 transition shrink-0">
                     <X size={14} />
                   </button>
