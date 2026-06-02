@@ -8,7 +8,7 @@ import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns 
 import toast from "react-hot-toast";
 import type { Pedido, Cliente, Produto, ItemPedido, StatusPedido } from "@/types";
 import {
-  DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent,
+  DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors, closestCenter,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
