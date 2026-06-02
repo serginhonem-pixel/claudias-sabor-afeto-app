@@ -35,6 +35,11 @@ export default function PedidoClientePage() {
   const [dataEntrega, setDataEntrega] = useState("");
   const [obs, setObs] = useState("");
   const [personalizacao, setPersonalizacao] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [numero, setNumero] = useState("");
+  const [complemento, setComplemento] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
 
   useEffect(() => {
     if (!contaId) return;
@@ -130,20 +135,22 @@ export default function PedidoClientePage() {
         }),
       }).catch(e => console.error("Erro ao notificar:", e));
 
+      const enderecoCompleto = [endereco.trim(), numero.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
       const itensTexto = carrinho.map(i => `• ${i.quantidade}x ${i.produto.nome} — ${fmt(i.produto.precoVenda * i.quantidade)}`).join("\n");
       const msg = [
         `🎂 *Novo Pedido #${numero} — ${conta?.nome}*`,
         ``,
         `👤 *Cliente:* ${nome.trim()}`,
         `📱 *WhatsApp:* ${whatsapp.trim()}`,
+        enderecoCompleto ? `📍 *Endereço:* ${enderecoCompleto}` : "",
         `📅 *Entrega desejada:* ${new Date(dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}`,
         ``,
         `*Itens:*`,
         itensTexto,
         ``,
         `💰 *Total: ${fmt(total)}*`,
-        obs.trim() ? `\n📝 *Obs:* ${obs.trim()}` : "",
         personalizacao.trim() ? `✏️ *Personalização:* ${personalizacao.trim()}` : "",
+        obs.trim() ? `📝 *Obs:* ${obs.trim()}` : "",
       ].filter(Boolean).join("\n");
 
       const telefone = conta?.telefone?.replace(/\D/g, "") ?? "";
@@ -204,7 +211,7 @@ export default function PedidoClientePage() {
             Seu pedido foi registrado com sucesso. O WhatsApp da <strong>{conta.nome}</strong> foi aberto com todos os detalhes — confirme por lá para garantir sua encomenda!
           </p>
           <button
-            onClick={() => { setStep("menu"); setCarrinho([]); setNome(""); setWhatsapp(""); setObs(""); setPersonalizacao(""); setDataEntrega(""); }}
+            onClick={() => { setStep("menu"); setCarrinho([]); setNome(""); setWhatsapp(""); setObs(""); setPersonalizacao(""); setDataEntrega(""); setEndereco(""); setNumero(""); setComplemento(""); setBairro(""); setCidade(""); }}
             className="w-full bg-[#C4566A] hover:bg-[#b04d60] text-white font-semibold py-3 rounded-2xl text-sm transition"
           >
             Fazer outro pedido
@@ -242,9 +249,26 @@ export default function PedidoClientePage() {
             <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Personalização (opcional)</label>
             <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={personalizacao} onChange={e => setPersonalizacao(e.target.value)} placeholder="Ex: Feliz Aniversário Maria! 🎉" />
           </div>
+
+          {/* Endereço de entrega */}
           <div>
-            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Observações / alergias (opcional)</label>
-            <textarea className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition resize-none h-20" value={obs} onChange={e => setObs(e.target.value)} placeholder="Intolerâncias, restrições, forma de entrega..." />
+            <p className="text-xs font-semibold text-[#7A6860] mb-2">📍 Endereço de entrega (opcional)</p>
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_80px] gap-2">
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua / Avenida" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={numero} onChange={e => setNumero(e.target.value)} placeholder="Nº" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={complemento} onChange={e => setComplemento(e.target.value)} placeholder="Complemento" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Bairro" />
+              </div>
+              <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Cidade" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Observações (opcional)</label>
+            <textarea className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition resize-none h-16" value={obs} onChange={e => setObs(e.target.value)} placeholder="Alguma observação para o pedido..." />
           </div>
 
           {/* Resumo */}
