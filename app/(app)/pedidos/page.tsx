@@ -261,6 +261,11 @@ export default function PedidosPage() {
                 <option value="">Selecione o cliente...</option>
                 {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.whatsapp}</option>)}
               </select>
+              {clienteSel && (clienteSel.endereco || clienteSel.bairro) && (
+                <p className="text-[0.65rem] text-muted mt-1.5 bg-rose-light/30 px-3 py-1.5 rounded-lg">
+                  📍 {[clienteSel.endereco, clienteSel.numero, clienteSel.complemento, clienteSel.bairro, clienteSel.cidade].filter(Boolean).join(", ")}
+                </p>
+              )}
             </div>
             <div>
               <label className="field-label">Data de Entrega *</label>

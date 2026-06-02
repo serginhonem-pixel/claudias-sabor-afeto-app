@@ -24,6 +24,11 @@ export interface Cliente {
   whatsapp: string;
   instagram?: string;
   bairro?: string;
+  endereco?: string;
+  numero?: string;
+  complemento?: string;
+  cep?: string;
+  cidade?: string;
   comoEncontrou?: string;
   restricoes?: string;
   createdAt: Date;

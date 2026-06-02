@@ -9,7 +9,9 @@ import toast from "react-hot-toast";
 import type { Cliente } from "@/types";
 
 const EMPTY: Omit<Cliente, "id" | "contaId" | "createdAt"> = {
-  nome: "", whatsapp: "", instagram: "", bairro: "", comoEncontrou: "", restricoes: "",
+  nome: "", whatsapp: "", instagram: "", bairro: "",
+  endereco: "", numero: "", complemento: "", cep: "", cidade: "",
+  comoEncontrou: "", restricoes: "",
 };
 
 const COMO_ENCONTROU = ["Instagram", "WhatsApp", "Indicação", "Facebook", "Google", "Outro"];
@@ -39,7 +41,9 @@ export default function ClientesPage() {
     setEditando(c);
     setForm({
       nome: c.nome, whatsapp: c.whatsapp, instagram: c.instagram ?? "",
-      bairro: c.bairro ?? "", comoEncontrou: c.comoEncontrou ?? "", restricoes: c.restricoes ?? "",
+      bairro: c.bairro ?? "", endereco: c.endereco ?? "", numero: c.numero ?? "",
+      complemento: c.complemento ?? "", cep: c.cep ?? "", cidade: c.cidade ?? "",
+      comoEncontrou: c.comoEncontrou ?? "", restricoes: c.restricoes ?? "",
     });
     setModal(true);
   }
@@ -112,6 +116,9 @@ export default function ClientesPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-dark text-sm">{c.nome}</p>
                     <p className="text-xs text-muted">{c.whatsapp}{c.bairro ? ` · ${c.bairro}` : ""}</p>
+                    {(c.endereco || c.cidade) && (
+                      <p className="text-[0.65rem] text-muted truncate">📍 {[c.endereco, c.numero, c.complemento, c.cidade].filter(Boolean).join(", ")}</p>
+                    )}
                     {c.restricoes && (
                       <p className="text-[0.65rem] text-amber-600 mt-0.5">⚠️ {c.restricoes}</p>
                     )}
@@ -163,10 +170,46 @@ export default function ClientesPage() {
               <label className="field-label">Instagram</label>
               <input className="field-input" value={form.instagram} onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))} placeholder="@usuario" />
             </div>
-            <div>
-              <label className="field-label">Bairro</label>
-              <input className="field-input" value={form.bairro} onChange={e => setForm(f => ({ ...f, bairro: e.target.value }))} placeholder="Ex: Moema" />
+          </div>
+
+          {/* Endereço de entrega */}
+          <div>
+            <p className="text-[0.65rem] font-semibold text-muted uppercase tracking-wide mb-2 mt-1">📍 Endereço de Entrega</p>
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_80px] gap-2">
+                <div>
+                  <label className="field-label">Rua / Avenida</label>
+                  <input className="field-input" value={form.endereco} onChange={e => setForm(f => ({ ...f, endereco: e.target.value }))} placeholder="Ex: Rua das Flores" />
+                </div>
+                <div>
+                  <label className="field-label">Número</label>
+                  <input className="field-input" value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} placeholder="123" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="field-label">Complemento</label>
+                  <input className="field-input" value={form.complemento} onChange={e => setForm(f => ({ ...f, complemento: e.target.value }))} placeholder="Apto, bloco, ref..." />
+                </div>
+                <div>
+                  <label className="field-label">Bairro</label>
+                  <input className="field-input" value={form.bairro} onChange={e => setForm(f => ({ ...f, bairro: e.target.value }))} placeholder="Ex: Centro" />
+                </div>
+              </div>
+              <div className="grid grid-cols-[100px_1fr] gap-2">
+                <div>
+                  <label className="field-label">CEP</label>
+                  <input className="field-input" value={form.cep} onChange={e => setForm(f => ({ ...f, cep: e.target.value }))} placeholder="00000-000" />
+                </div>
+                <div>
+                  <label className="field-label">Cidade</label>
+                  <input className="field-input" value={form.cidade} onChange={e => setForm(f => ({ ...f, cidade: e.target.value }))} placeholder="Ex: São Paulo" />
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="field-label">Como encontrou?</label>
               <select className="field-input" value={form.comoEncontrou} onChange={e => setForm(f => ({ ...f, comoEncontrou: e.target.value }))}>
