@@ -4,8 +4,9 @@ import { useConta } from "@/hooks/useConta";
 import { updateConta } from "@/lib/firestore";
 import { seedDados, limparDados } from "@/lib/seed";
 import { Topbar } from "@/components/layout/Topbar";
-import { Save, FlaskConical, Trash2, Link2, Copy } from "lucide-react";
+import { Save, FlaskConical, Trash2, Link2, Copy, Plus, X } from "lucide-react";
 import toast from "react-hot-toast";
+import type { CustoFixo } from "@/types";
 
 export default function ConfigPage() {
   const { conta } = useConta();
@@ -15,12 +16,15 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [custosFixos, setCustosFixos] = useState<CustoFixo[]>([]);
+  const [savingCustos, setSavingCustos] = useState(false);
 
   useEffect(() => {
     if (!conta) return;
     setNome(conta.nome ?? "");
     setTelefone(conta.telefone ?? "");
     setInstagram(conta.instagram ?? "");
+    setCustosFixos(conta.custosFixos ?? []);
   }, [conta]);
 
   async function handleSeed() {
@@ -51,6 +55,29 @@ export default function ConfigPage() {
     } finally {
       setClearing(false);
     }
+  }
+
+  function addCustoFixo() {
+    setCustosFixos(prev => [...prev, { id: crypto.randomUUID(), nome: "", valor: 0 }]);
+  }
+
+  function updateCustoFixo(id: string, field: "nome" | "valor", value: string | number) {
+    setCustosFixos(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  }
+
+  function removeCustoFixo(id: string) {
+    setCustosFixos(prev => prev.filter(c => c.id !== id));
+  }
+
+  async function handleSaveCustos() {
+    if (!conta) return;
+    const validos = custosFixos.filter(c => c.nome.trim());
+    setSavingCustos(true);
+    try {
+      await updateConta(conta.id, { custosFixos: validos });
+      toast.success("Custos fixos salvos!");
+    } catch { toast.error("Erro ao salvar"); }
+    finally { setSavingCustos(false); }
   }
 
   async function handleSave() {
@@ -92,6 +119,66 @@ export default function ConfigPage() {
             <Save size={14} />
             {saving ? "Salvando..." : "Salvar Configurações"}
           </button>
+        </div>
+
+        {/* Custos Fixos */}
+        <div className="bg-white rounded-xl border border-rose-light/60 p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-heading font-semibold text-dark text-sm">Custos Fixos Mensais</h2>
+            <button onClick={addCustoFixo} className="flex items-center gap-1 text-xs text-rose font-semibold hover:underline">
+              <Plus size={13} /> Adicionar
+            </button>
+          </div>
+          <p className="text-xs text-muted mb-4">Aluguel, luz, gás, internet, mão de obra... Serão somados ao custo total na página de Custos & CMV.</p>
+
+          {custosFixos.length === 0 ? (
+            <button onClick={addCustoFixo}
+              className="w-full border-2 border-dashed border-rose-light hover:border-rose-mid rounded-xl py-6 flex flex-col items-center gap-1.5 text-muted hover:text-rose transition text-xs font-medium">
+              <Plus size={20} />
+              Nenhum custo fixo cadastrado ainda
+            </button>
+          ) : (
+            <div className="space-y-2 mb-4">
+              {custosFixos.map(c => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <input
+                    className="field-input flex-1"
+                    value={c.nome}
+                    onChange={e => updateCustoFixo(c.id, "nome", e.target.value)}
+                    placeholder="Ex: Aluguel, Luz, Gás..."
+                  />
+                  <div className="relative shrink-0 w-28">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs">R$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="field-input pl-8"
+                      value={c.valor}
+                      onChange={e => updateCustoFixo(c.id, "valor", Number(e.target.value))}
+                    />
+                  </div>
+                  <button onClick={() => removeCustoFixo(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-muted hover:text-red-500 transition shrink-0">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <div className="flex justify-between items-center pt-2 border-t border-rose-light/40 text-xs">
+                <span className="text-muted font-medium">Total mensal</span>
+                <span className="font-bold text-dark">
+                  {custosFixos.reduce((s, c) => s + (c.valor || 0), 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {custosFixos.length > 0 && (
+            <button onClick={handleSaveCustos} disabled={savingCustos}
+              className="w-full flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] disabled:opacity-60 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+              <Save size={14} />
+              {savingCustos ? "Salvando..." : "Salvar Custos Fixos"}
+            </button>
+          )}
         </div>
 
         {/* Link de pedidos para clientes */}

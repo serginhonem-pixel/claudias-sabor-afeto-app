@@ -46,13 +46,15 @@ export default function CustosPage() {
 
   const faturamentoMes = pedidosMes.reduce((s, p) => s + p.totalFinal, 0);
 
-  const custoMes = pedidosMes.reduce((s, p) => {
+  const custoVariavel = pedidosMes.reduce((s, p) => {
     return s + p.itens.reduce((si, item) => {
       const prod = produtos.find(pr => pr.id === item.produtoId);
       return si + (prod?.custoProduto ?? 0) * item.quantidade;
     }, 0);
   }, 0);
 
+  const custoFixoMensal = (conta?.custosFixos ?? []).reduce((s, c) => s + (c.valor || 0), 0);
+  const custoMes = custoVariavel + custoFixoMensal;
   const cmvGeral = faturamentoMes > 0 ? (custoMes / faturamentoMes) * 100 : 0;
   const margemBruta = faturamentoMes - custoMes;
 
@@ -99,6 +101,40 @@ export default function CustosPage() {
               <p className="text-xs text-muted mt-0.5">{s.sub}</p>
             </div>
           ))}
+        </div>
+
+        {/* Breakdown de custos */}
+        <div className="bg-white rounded-xl border border-rose-light/60 p-4">
+          <h2 className="font-heading font-semibold text-dark text-sm mb-3">Composição dos Custos</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-muted">Custo variável (produtos vendidos)</span>
+              <span className="font-semibold text-dark">{fmt(custoVariavel)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-muted">Custos fixos mensais</span>
+                {custoFixoMensal === 0 && (
+                  <a href="/configuracoes" className="text-[0.65rem] text-rose hover:underline">configurar →</a>
+                )}
+              </div>
+              <span className="font-semibold text-dark">{fmt(custoFixoMensal)}</span>
+            </div>
+            {(conta?.custosFixos ?? []).length > 0 && (
+              <div className="pl-3 space-y-1 border-l-2 border-rose-light">
+                {(conta?.custosFixos ?? []).map(c => (
+                  <div key={c.id} className="flex justify-between text-xs text-muted">
+                    <span>{c.nome}</span>
+                    <span>{fmt(c.valor)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-between items-center border-t border-rose-light/40 pt-2 font-bold text-dark">
+              <span>Custo Total</span>
+              <span>{fmt(custoMes)}</span>
+            </div>
+          </div>
         </div>
 
         {/* Referência CMV */}

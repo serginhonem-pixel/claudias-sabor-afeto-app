@@ -1,10 +1,17 @@
 // ─── USUÁRIO / CONTA ─────────────────────────────────────────────────────────
+export interface CustoFixo {
+  id: string;
+  nome: string;
+  valor: number;
+}
+
 export interface Conta {
   id: string;
   nome: string;
   telefone?: string;
   instagram?: string;
   fcmToken?: string;
+  custosFixos?: CustoFixo[];
   createdAt: Date;
   ativo: boolean;
 }
