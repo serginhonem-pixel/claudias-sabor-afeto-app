@@ -69,15 +69,15 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
       {/* Conteúdo */}
       <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
 
-        {/* Logo SVG */}
+        {/* Logo */}
         <div style={{
           opacity: step1 ? 1 : 0,
           transform: step1 ? "translateY(0)" : "translateY(18px)",
           transition: "opacity 0.7s ease, transform 0.7s ease",
         }}>
-          <svg viewBox="6 7 441 178" width={220} style={{ height: "auto", display: "block" }} aria-label={nomeConta}>
-            <path fill="#F6EFE1" fillRule="evenodd" d={LOGO_PATH} />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt={nomeConta} width={220}
+            style={{ display: "block", filter: "brightness(0) invert(1)" }} />
         </div>
 
         {/* Tagline */}
@@ -429,9 +429,8 @@ export default function PedidoClientePage() {
       {/* Header */}
       <div className="bg-[#FDF8F4] px-4 pt-8 pb-5 text-center border-b border-[#FAEDEF]">
         <div className="flex justify-center mb-3">
-          <svg viewBox="6 7 441 178" width={200} style={{ height: "auto", display: "block" }} aria-label={conta.nome}>
-            <path fill="#2A1F1A" fillRule="evenodd" d={LOGO_PATH} />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt={conta.nome} width={200} style={{ mixBlendMode: "multiply", display: "block" }} />
         </div>
         <p className="text-[#7A6860] text-xs">Faça seu pedido direto com a gente 🎂</p>
         {conta.instagram && (
