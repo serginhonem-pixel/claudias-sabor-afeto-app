@@ -1,0 +1,26 @@
+{
+  "name": "Claudia's Sabor e Afeto",
+  "short_name": "Claudia's",
+  "description": "Gestão da sua confeitaria artesanal",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDF8F4",
+  "theme_color": "#2A1F1A",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "pt-BR"
+}

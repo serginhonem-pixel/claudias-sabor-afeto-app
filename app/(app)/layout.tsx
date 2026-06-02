@@ -17,6 +17,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [conta, setConta] = useState<Conta | null>(null);
   useFCM(conta?.id);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
   const [contaLoading, setContaLoading] = useState(true);
   const [maisAberto, setMaisAberto] = useState(false);
 
