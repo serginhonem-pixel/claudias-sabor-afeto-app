@@ -75,8 +75,8 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
           transform: step1 ? "translateY(0)" : "translateY(18px)",
           transition: "opacity 0.7s ease, transform 0.7s ease",
         }}>
-          <svg viewBox="6 7 441 178" width={220} height={90} aria-label={nomeConta}>
-            <path fill="#2A1F1A" fillRule="evenodd" d={LOGO_PATH} />
+          <svg viewBox="6 7 441 178" width={220} style={{ height: "auto", display: "block" }} aria-label={nomeConta}>
+            <path fill="#F6EFE1" fillRule="evenodd" d={LOGO_PATH} />
           </svg>
         </div>
 
@@ -109,7 +109,7 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
         <div style={{
           marginTop: 18,
           fontFamily: "'Poppins', sans-serif", fontSize: 11, fontWeight: 300,
-          color: "#7A6860", letterSpacing: "0.12em", textTransform: "uppercase",
+          color: "#D8B974", letterSpacing: "0.12em", textTransform: "uppercase",
           opacity: step1 ? 1 : 0,
           transition: "opacity 0.5s ease 0.55s",
           textAlign: "center",
