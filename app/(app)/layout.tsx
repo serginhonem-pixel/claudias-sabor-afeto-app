@@ -90,6 +90,9 @@ function BottomNav({ onSignOut, maisAberto, setMaisAberto }: { onSignOut: () => 
     { href: "/receitas",      emoji: "📖", label: "Receitas" },
     { href: "/custos",        emoji: "📊", label: "Custos" },
     { href: "/clientes",      emoji: "👥", label: "Clientes" },
+    { href: "/calendario",    emoji: "📅", label: "Calendário" },
+    { href: "/compras",       emoji: "🛒", label: "Compras" },
+    { href: "/orcamento",     emoji: "📋", label: "Orçamento" },
     { href: "/configuracoes", emoji: "⚙️", label: "Config." },
   ];
 
@@ -97,7 +100,7 @@ function BottomNav({ onSignOut, maisAberto, setMaisAberto }: { onSignOut: () => 
     <>
       {maisAberto && (
         <div className="md:hidden fixed inset-0 z-40" onClick={() => setMaisAberto(false)}>
-          <div className="absolute bottom-16 left-0 right-0 bg-dark border-t border-white/10 p-3 grid grid-cols-4 gap-2" onClick={e => e.stopPropagation()}>
+          <div className="absolute bottom-16 left-0 right-0 bg-dark border-t border-white/10 p-3 grid grid-cols-4 gap-2 max-h-64 overflow-y-auto" onClick={e => e.stopPropagation()}>
             {extras.map(({ href, emoji, label }) => (
               <Link key={href} href={href} onClick={() => setMaisAberto(false)}
                 className="flex flex-col items-center gap-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition">
