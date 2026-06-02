@@ -109,15 +109,18 @@ export default function CustosPage() {
 
         {/* Seletor de mês */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted shrink-0">Período:</span>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <span className="text-xs font-semibold text-muted">Período:</span>
+          <select
+            value={mesSel}
+            onChange={e => setMesSel(e.target.value)}
+            className="border border-rose-light rounded-xl px-3 py-1.5 text-sm text-dark bg-white outline-none focus:border-rose-mid transition cursor-pointer"
+          >
             {MESES.map(m => (
-              <button key={m} onClick={() => setMesSel(m)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${mesSel === m ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
-                {format(parseISO(m + "-01"), "MMM/yy", { locale: ptBR })}
-              </button>
+              <option key={m} value={m}>
+                {format(parseISO(m + "-01"), "MMMM 'de' yyyy", { locale: ptBR })}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         {/* Toggle vista */}
