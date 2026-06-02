@@ -1,6 +1,6 @@
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, setDoc,
-  deleteDoc, query, where, orderBy, limit, Timestamp, DocumentData,
+  deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Conta, Cliente, Insumo, Receita, Produto, Pedido } from "@/types";
@@ -125,6 +125,16 @@ export async function getPedidos(contaId: string): Promise<Pedido[]> {
     createdAt: fromTs(d.data().createdAt),
     updatedAt: fromTs(d.data().updatedAt),
   })) as Pedido[];
+}
+
+export function listenPedidos(contaId: string, cb: (pedidos: Pedido[]) => void) {
+  return onSnapshot(query(col(contaId, "pedidos"), orderBy("createdAt", "desc")), snap => {
+    cb(snap.docs.map(d => ({
+      id: d.id, ...d.data(),
+      createdAt: fromTs(d.data().createdAt),
+      updatedAt: fromTs(d.data().updatedAt),
+    })) as Pedido[]);
+  });
 }
 
 export async function getProximoNumeroPedido(contaId: string): Promise<number> {

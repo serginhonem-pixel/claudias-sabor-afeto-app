@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
-import { getPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
+import { listenPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns } from "lucide-react";
@@ -38,11 +38,12 @@ export default function PedidosPage() {
   const [status, setStatus] = useState<StatusPedido>("aguardando");
   const [desconto, setDesconto] = useState(0);
 
-  function load() {
+  function load() { } // mantido para compatibilidade com chamadas após salvar
+  useEffect(() => {
     if (!conta) return;
-    getPedidos(conta.id).then(setPedidos);
-  }
-  useEffect(load, [conta]);
+    const unsub = listenPedidos(conta.id, setPedidos);
+    return unsub;
+  }, [conta]);
   useEffect(() => {
     if (!conta) return;
     getClientes(conta.id).then(setClientes);
