@@ -144,7 +144,8 @@ export default function ConfigPage() {
               {custosFixos.map(c => (
                 <div key={c.id} className="flex items-center gap-2">
                   <input
-                    className="field-input flex-1"
+                    className="field-input min-w-0 flex-1"
+                    style={{ width: "auto" }}
                     value={c.nome}
                     onChange={e => updateCustoFixo(c.id, "nome", e.target.value)}
                     placeholder="Ex: Aluguel, Luz, Gás..."
@@ -154,6 +155,7 @@ export default function ConfigPage() {
                     min="0"
                     step="0.01"
                     className="field-input shrink-0 w-28 text-right"
+                    style={{ width: "7rem" }}
                     value={c.valor || ""}
                     placeholder="0,00"
                     onChange={e => updateCustoFixo(c.id, "valor", Number(e.target.value))}
