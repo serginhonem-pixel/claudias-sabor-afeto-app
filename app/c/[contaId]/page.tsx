@@ -288,23 +288,6 @@ export default function PedidoClientePage() {
       const telefone = conta?.telefone?.replace(/\D/g, "") ?? "";
       if (telefone) window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`, "_blank");
 
-      // Notificar dono via email + push
-      fetch("/api/notificar-pedido", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          numero,
-          clienteNome: nome.trim(),
-          clienteWhatsapp: whatsapp.trim(),
-          dataEntrega,
-          itens,
-          total,
-          obs: obs.trim(),
-          personalizacao: personalizacao.trim(),
-          fcmToken: conta?.fcmToken ?? null,
-        }),
-      }).catch(console.error);
-
       setStep("confirmado");
     } catch (e) {
       console.error(e);
@@ -446,7 +429,9 @@ export default function PedidoClientePage() {
       {/* Header */}
       <div className="bg-[#FDF8F4] px-4 pt-8 pb-5 text-center border-b border-[#FAEDEF]">
         <div className="flex justify-center mb-3">
-          <Image src="/logo.png" alt={conta.nome} width={180} height={75} className="object-contain" />
+          <svg viewBox="6 7 441 178" width={200} style={{ height: "auto", display: "block" }} aria-label={conta.nome}>
+            <path fill="#2A1F1A" fillRule="evenodd" d={LOGO_PATH} />
+          </svg>
         </div>
         <p className="text-[#7A6860] text-xs">Faça seu pedido direto com a gente 🎂</p>
         {conta.instagram && (

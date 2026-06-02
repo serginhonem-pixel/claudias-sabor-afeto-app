@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
-import { getPedidos, savePedido } from "@/lib/firestore";
+import { listenPedidos, savePedido } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -30,14 +30,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!conta) return;
-    getPedidos(conta.id).then(setPedidos);
+    const unsub = listenPedidos(conta.id, setPedidos);
+    return unsub;
   }, [conta]);
 
   async function avancar(p: Pedido) {
     if (!conta || p.status === "entregue") return;
     await savePedido(conta.id, { ...p, status: PROX[p.status], updatedAt: new Date() }, p.id);
     toast.success(`→ ${STATUS[PROX[p.status]].label}`);
-    getPedidos(conta.id).then(setPedidos);
   }
 
   const hoje = format(new Date(), "yyyy-MM-dd");

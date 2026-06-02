@@ -6,6 +6,11 @@ const nextConfig = {
       { protocol: "http", hostname: "**" },
     ],
   },
+  async rewrites() {
+    return [
+      { source: "/firebase-messaging-sw.js", destination: "/api/sw" },
+    ];
+  },
 };
 
 export default nextConfig;
