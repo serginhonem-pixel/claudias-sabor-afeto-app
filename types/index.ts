@@ -114,6 +114,7 @@ export interface Pedido {
   desconto: number;
   totalFinal: number;
   formaPagamento: string;
+  pago?: boolean;
   dataEntrega: string;
   status: StatusPedido;
   obs?: string;

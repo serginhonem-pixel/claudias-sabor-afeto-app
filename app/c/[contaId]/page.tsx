@@ -114,6 +114,7 @@ export default function PedidoClientePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          contaId,
           numero,
           clienteNome: nome.trim(),
           clienteWhatsapp: whatsapp.trim(),

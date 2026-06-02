@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getAdminMessaging } from "@/lib/firebase-admin";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+
+function getAdminDb() {
+  const app = getApps().length > 0 ? getApps()[0] : initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    }),
+  });
+  return getFirestore(app);
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -15,8 +28,19 @@ interface ItemPedido {
 }
 
 export async function POST(req: NextRequest) {
-  const { numero, clienteNome, clienteWhatsapp, dataEntrega, itens, total, obs, personalizacao, fcmToken } =
+  const { numero, clienteNome, clienteWhatsapp, dataEntrega, itens, total, obs, personalizacao, contaId } =
     await req.json();
+
+  // Busca fcmToken da conta no Firestore Admin
+  let fcmToken: string | undefined;
+  if (contaId) {
+    try {
+      const doc = await getAdminDb().collection("contas").doc(contaId).get();
+      fcmToken = doc.data()?.fcmToken;
+    } catch (e) {
+      console.error("Erro ao buscar fcmToken:", e);
+    }
+  }
 
   const dataFormatada = new Date(dataEntrega + "T12:00:00").toLocaleDateString("pt-BR");
   const errors: string[] = [];

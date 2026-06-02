@@ -4,7 +4,7 @@ import { useConta } from "@/hooks/useConta";
 import { listenPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns, Banknote } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Pedido, Cliente, Produto, ItemPedido, StatusPedido } from "@/types";
 import {
@@ -128,6 +128,12 @@ export default function PedidosPage() {
     load();
   }
 
+  async function togglePago(p: Pedido) {
+    if (!conta) return;
+    await savePedido(conta.id, { ...p, pago: !p.pago, updatedAt: new Date() }, p.id);
+    toast.success(p.pago ? "Marcado como não pago" : "Pagamento confirmado! ✓");
+  }
+
   async function handleDelete(id: string) {
     if (!conta || !confirm("Excluir pedido?")) return;
     await deletePedido(conta.id, id);
@@ -192,7 +198,13 @@ export default function PedidosPage() {
                     </div>
                     <p className="font-semibold text-dark">{p.clienteNome}</p>
                     <p className="text-xs text-muted truncate">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
-                    <p className="text-xs text-muted mt-1">📅 {p.dataEntrega} · {p.formaPagamento}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-muted">📅 {p.dataEntrega} · {p.formaPagamento}</p>
+                      {p.pago
+                        ? <span className="text-[0.6rem] font-bold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full border border-emerald-200">Pago ✓</span>
+                        : <span className="text-[0.6rem] font-bold bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full border border-amber-200">A receber</span>
+                      }
+                    </div>
                     {p.personalizacao && <p className="text-xs text-caramel-DEFAULT mt-1">✏️ {p.personalizacao}</p>}
                   </div>
                   <div className="text-right shrink-0">
@@ -201,6 +213,10 @@ export default function PedidosPage() {
                       {p.status !== "entregue" && p.status !== "cancelado" && (
                         <button onClick={() => avancarStatus(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-rose transition" title="Avançar status"><CheckCircle2 size={14} /></button>
                       )}
+                      <button onClick={() => togglePago(p)} title={p.pago ? "Marcar não pago" : "Confirmar pagamento"}
+                        className={`p-1.5 rounded-lg transition ${p.pago ? "bg-emerald-50 text-emerald-600" : "hover:bg-amber-50 text-muted hover:text-amber-600"}`}>
+                        <Banknote size={14} />
+                      </button>
                       <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition"><MessageCircle size={14} /></a>
                       <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition"><Pencil size={14} /></button>
                       <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition"><Trash2 size={14} /></button>

@@ -6,7 +6,7 @@ import { Topbar } from "@/components/layout/Topbar";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, ShoppingBag, TrendingUp, Clock, AlertTriangle, Plus, MessageCircle } from "lucide-react";
+import { CheckCircle2, ShoppingBag, TrendingUp, Clock, AlertTriangle, Plus, MessageCircle, Banknote } from "lucide-react";
 import type { Pedido, StatusPedido } from "@/types";
 import toast from "react-hot-toast";
 
@@ -50,6 +50,7 @@ export default function DashboardPage() {
   })();
 
   const ativos    = pedidos.filter(p => p.status !== "entregue" && p.status !== "cancelado");
+  const aReceber  = pedidos.filter(p => !p.pago && p.status !== "cancelado").reduce((s, p) => s + p.totalFinal, 0);
   const hoje_     = pedidos.filter(p => p.dataEntrega === hoje && p.status !== "cancelado" && p.status !== "entregue");
   const atrasados = pedidos.filter(p => p.dataEntrega < hoje && p.status !== "entregue" && p.status !== "cancelado");
   const prontos   = pedidos.filter(p => p.status === "pronto");
@@ -103,18 +104,16 @@ export default function DashboardPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { icon: ShoppingBag,  label: "Pedidos Ativos",  value: ativos.length,      sub: `${hoje_.length} para hoje`,            color: "text-rose",            bg: "bg-rose-light/40" },
-            { icon: TrendingUp,   label: "Faturamento Mês", value: fmt(faturamento),   sub: format(new Date(), "MMMM", { locale: ptBR }), color: "text-emerald-600", bg: "bg-emerald-50" },
-            { icon: Clock,        label: "Entrega Hoje",    value: hoje_.length,        sub: "pedidos para hoje",                     color: "text-caramel-DEFAULT",  bg: "bg-amber-50" },
-            { icon: AlertTriangle, label: "Em Atraso",      value: atrasados.length,   sub: atrasados.length > 0 ? "atenção!" : "tudo em dia ✓", color: atrasados.length > 0 ? "text-red-500" : "text-emerald-600", bg: atrasados.length > 0 ? "bg-red-50" : "bg-emerald-50" },
-          ].map(s => {
+          {([
+            { icon: ShoppingBag,   label: "Pedidos Ativos",  value: String(ativos.length),   sub: `${hoje_.length} para hoje`,   color: "text-rose",                                                              bg: "bg-rose-light/40" },
+            { icon: TrendingUp,    label: "Faturamento Mês", value: fmt(faturamento),         sub: format(new Date(), "MMMM", { locale: ptBR }), color: "text-emerald-600",                                      bg: "bg-emerald-50" },
+            { icon: Banknote,      label: "A Receber",       value: fmt(aReceber),            sub: "pagamentos pendentes",        color: aReceber > 0 ? "text-amber-600" : "text-emerald-600",                    bg: aReceber > 0 ? "bg-amber-50" : "bg-emerald-50" },
+            { icon: AlertTriangle, label: "Em Atraso",       value: String(atrasados.length), sub: atrasados.length > 0 ? "atenção!" : "tudo em dia ✓", color: atrasados.length > 0 ? "text-red-500" : "text-emerald-600", bg: atrasados.length > 0 ? "bg-red-50" : "bg-emerald-50" },
+          ] as const).map(s => {
             const Icon = s.icon;
             return (
               <div key={s.label} className="bg-white rounded-xl border border-rose-light/60 p-4">
-                <div className={`w-8 h-8 ${s.bg} rounded-lg flex items-center justify-center mb-3`}>
-                  <Icon size={15} className={s.color} />
-                </div>
+                <div className={`w-8 h-8 ${s.bg} rounded-lg flex items-center justify-center mb-3`}><Icon size={15} className={s.color} /></div>
                 <p className="text-xs text-muted">{s.label}</p>
                 <p className={`font-heading font-bold text-xl ${s.color} mt-0.5`}>{s.value}</p>
                 <p className="text-[0.65rem] text-muted mt-0.5">{s.sub}</p>

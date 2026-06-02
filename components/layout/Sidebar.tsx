@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useConta } from "@/hooks/useConta";
-import { LayoutDashboard, ShoppingBag, Cake, BookOpen, Package, TrendingUp, Users, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Cake, BookOpen, Package, TrendingUp, Users, Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, ShoppingCart, FileText } from "lucide-react";
 
 const nav = [
   { section: "Principal" },
@@ -18,6 +18,10 @@ const nav = [
   { label: "Custos & CMV", href: "/custos",  icon: TrendingUp },
   { section: "Cadastros" },
   { label: "Clientes",   href: "/clientes",  icon: Users },
+  { section: "Ferramentas" },
+  { label: "Calendário", href: "/calendario", icon: CalendarDays },
+  { label: "Compras",    href: "/compras",    icon: ShoppingCart },
+  { label: "Orçamento",  href: "/orcamento",  icon: FileText },
 ];
 
 export function Sidebar({ onSignOut }: { onSignOut: () => void }) {
