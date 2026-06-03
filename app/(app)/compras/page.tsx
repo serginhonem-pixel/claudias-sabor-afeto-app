@@ -282,7 +282,7 @@ export default function ComprasPage() {
             </div>
 
             {/* Área de impressão — oculta na tela, visível só ao imprimir */}
-            <div id="lista-compras-print" className="hidden">
+            <div id="lista-compras-print" style={{ position: "absolute", left: "-9999px", top: 0 }}>
               <div style={{ fontFamily: "sans-serif", padding: "32px", maxWidth: "600px", margin: "0 auto" }}>
                 <p style={{ fontSize: "10px", color: "#888", textTransform: "uppercase", letterSpacing: "2px", marginBottom: "4px" }}>Claudia&apos;s Sabor &amp; Afeto</p>
                 <h1 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "4px" }}>Lista de Compras</h1>
@@ -318,9 +318,9 @@ export default function ComprasPage() {
 
       <style jsx global>{`
         @media print {
-          body > * { display: none !important; }
-          #lista-compras-print { display: block !important; position: fixed; top: 0; left: 0; width: 100%; background: white; }
-          #lista-compras-print * { visibility: visible !important; }
+          body * { visibility: hidden !important; }
+          #lista-compras-print, #lista-compras-print * { visibility: visible !important; }
+          #lista-compras-print { position: fixed; top: 0; left: 0; width: 100%; background: white; }
         }
       `}</style>
     </>

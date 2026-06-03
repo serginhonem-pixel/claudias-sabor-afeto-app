@@ -467,10 +467,9 @@ export default function ReceitasPage() {
             </div>
             <style jsx global>{`
               @media print {
-                body > * { display: none !important; }
-                #ficha-tecnica-print { display: block !important; position: fixed; top: 0; left: 0; width: 100%; padding: 32px; background: white; }
-                #ficha-tecnica-print * { visibility: visible !important; }
-                .no-print { display: none !important; }
+                body * { visibility: hidden !important; }
+                #ficha-tecnica-print, #ficha-tecnica-print * { visibility: visible !important; }
+                #ficha-tecnica-print { position: fixed; top: 0; left: 0; width: 100%; padding: 32px; background: white; }
               }
             `}</style>
           </div>
