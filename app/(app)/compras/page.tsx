@@ -109,6 +109,32 @@ export default function ComprasPage() {
   }
 
   const itensSelecionados = insumos.filter(i => i.id in selecionados);
+
+  function imprimirLista() {
+    const data = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    const linhas = itensSelecionados.map((i, idx) => `
+      <tr style="background:${idx % 2 === 0 ? "#fff" : "#fdf8f9"}">
+        <td style="padding:9px 8px;border-bottom:1px solid #f0dde0">${i.nome}</td>
+        <td style="padding:9px 8px;border-bottom:1px solid #f0dde0;text-align:right;font-weight:600">${selecionados[i.id]} ${i.unidade}</td>
+        <td style="padding:9px 8px;border-bottom:1px solid #f0dde0;text-align:right;color:#ccc;font-size:16px">□</td>
+      </tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lista de Compras</title>
+      <style>body{font-family:sans-serif;padding:40px;max-width:600px;margin:0 auto}
+      table{width:100%;border-collapse:collapse;font-size:13px;margin-top:20px}
+      th{text-align:left;padding:8px;border-bottom:2px solid #C4566A;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+      th:nth-child(2),th:nth-child(3){text-align:right}</style>
+      </head><body>
+      <p style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:2px;margin:0">Claudia's Sabor & Afeto</p>
+      <h1 style="font-size:24px;margin:4px 0 2px">Lista de Compras</h1>
+      <p style="font-size:12px;color:#888;margin:0 0 4px">${data}</p>
+      <table><thead><tr><th>Produto</th><th style="text-align:right">Quantidade</th><th style="text-align:right">✓</th></tr></thead>
+      <tbody>${linhas}</tbody></table>
+      <p style="font-size:10px;color:#bbb;margin-top:32px;text-align:center">${itensSelecionados.length} ${itensSelecionados.length === 1 ? "item" : "itens"}</p>
+      <script>window.onload=()=>{window.print();}<\/script></body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+
   const insumosPorCategoria = CATS.map(cat => ({
     cat,
     items: insumos.filter(i => i.categoria === cat),
@@ -231,7 +257,7 @@ export default function ComprasPage() {
                 )}
               </p>
               <button
-                onClick={() => window.print()}
+                onClick={imprimirLista}
                 disabled={itensSelecionados.length === 0}
                 className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
               >
@@ -281,48 +307,9 @@ export default function ComprasPage() {
               ))}
             </div>
 
-            {/* Área de impressão — oculta na tela, visível só ao imprimir */}
-            <div id="lista-compras-print" style={{ position: "absolute", left: "-9999px", top: 0 }}>
-              <div style={{ fontFamily: "sans-serif", padding: "32px", maxWidth: "600px", margin: "0 auto" }}>
-                <p style={{ fontSize: "10px", color: "#888", textTransform: "uppercase", letterSpacing: "2px", marginBottom: "4px" }}>Claudia&apos;s Sabor &amp; Afeto</p>
-                <h1 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "4px" }}>Lista de Compras</h1>
-                <p style={{ fontSize: "11px", color: "#888", marginBottom: "24px" }}>
-                  {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
-                </p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #C4566A" }}>
-                      <th style={{ textAlign: "left", paddingBottom: "8px", color: "#555" }}>Produto</th>
-                      <th style={{ textAlign: "right", paddingBottom: "8px", color: "#555" }}>Qtd</th>
-                      <th style={{ textAlign: "right", paddingBottom: "8px", color: "#555" }}>Comprado ✓</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itensSelecionados.map((i, idx) => (
-                      <tr key={i.id} style={{ borderBottom: "1px solid #f0e0e3", background: idx % 2 === 0 ? "#fff" : "#fdf8f9" }}>
-                        <td style={{ padding: "8px 0" }}>{i.nome}</td>
-                        <td style={{ padding: "8px 0", textAlign: "right", fontWeight: "600" }}>{selecionados[i.id]} {i.unidade}</td>
-                        <td style={{ padding: "8px 0", textAlign: "right", color: "#ccc" }}>______</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p style={{ fontSize: "10px", color: "#aaa", marginTop: "32px", textAlign: "center" }}>
-                  {itensSelecionados.length} {itensSelecionados.length === 1 ? "item" : "itens"}
-                </p>
-              </div>
-            </div>
           </>
         )}
       </div>
-
-      <style jsx global>{`
-        @media print {
-          body * { visibility: hidden !important; }
-          #lista-compras-print, #lista-compras-print * { visibility: visible !important; }
-          #lista-compras-print { position: fixed; top: 0; left: 0; width: 100%; background: white; }
-        }
-      `}</style>
     </>
   );
 }

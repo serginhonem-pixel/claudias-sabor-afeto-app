@@ -394,11 +394,47 @@ export default function ReceitasPage() {
         });
         const total = ings.reduce((s, i) => s + i.subtotal, 0);
         const porUnidade = r.rendimento > 0 ? total / r.rendimento : 0;
+        const fmtR = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+        function imprimir() {
+          const linhasIng = ings.map((ing, idx) => `
+            <tr style="background:${idx % 2 === 0 ? "#fff" : "#fdf8f9"}">
+              <td style="padding:8px;border-bottom:1px solid #f0dde0">${ing.insumoNome}</td>
+              <td style="padding:8px;border-bottom:1px solid #f0dde0;text-align:right">${ing.quantidade}</td>
+              <td style="padding:8px;border-bottom:1px solid #f0dde0;text-align:right">${ing.unidade}</td>
+              <td style="padding:8px;border-bottom:1px solid #f0dde0;text-align:right">${fmtR(ing.custoUnit)}</td>
+              <td style="padding:8px;border-bottom:1px solid #f0dde0;text-align:right;font-weight:600">${fmtR(ing.subtotal)}</td>
+            </tr>`).join("");
+          const preparo = r.modoPreparo ? `
+            <h2 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin:28px 0 10px">Modo de Preparo</h2>
+            <p style="font-size:13px;line-height:1.7;white-space:pre-wrap">${r.modoPreparo}</p>` : "";
+          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${r.nome}</title>
+            <style>body{font-family:sans-serif;padding:40px;max-width:680px;margin:0 auto;color:#222}
+            table{width:100%;border-collapse:collapse;font-size:13px}
+            th{text-align:left;padding:8px;border-bottom:2px solid #C4566A;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666}
+            th:not(:first-child){text-align:right}</style></head><body>
+            <p style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:2px;margin:0">Claudia's Sabor & Afeto</p>
+            <h1 style="font-size:22px;margin:4px 0 2px">${r.nome}</h1>
+            <p style="font-size:12px;color:#888;margin:0 0 4px">${r.categoria}${r.tempoPreparo ? " · " + r.tempoPreparo : ""} · Rendimento: ${r.rendimento} ${r.unidadeRendimento}</p>
+            <h2 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin:24px 0 10px">Ingredientes</h2>
+            <table><thead><tr>
+              <th>Ingrediente</th><th>Qtd</th><th>Un</th><th>R$/un</th><th>Total</th>
+            </tr></thead><tbody>${linhasIng}</tbody></table>
+            <div style="margin-top:16px;padding:14px 16px;background:#f0faf4;border:1px solid #a7f3d0;border-radius:10px;font-size:13px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Custo total</span><strong>${fmtR(total)}</strong></div>
+              <div style="display:flex;justify-content:space-between"><span>Custo por ${r.unidadeRendimento.toLowerCase()}</span><strong>${fmtR(porUnidade)}</strong></div>
+            </div>
+            ${preparo}
+            <p style="font-size:10px;color:#bbb;margin-top:40px;text-align:center">Emitido em ${new Date().toLocaleDateString("pt-BR")}</p>
+            <script>window.onload=()=>{window.print();}<\/script></body></html>`;
+          const w = window.open("", "_blank");
+          if (w) { w.document.write(html); w.document.close(); }
+        }
 
         return (
-          <div className="fixed inset-0 z-[300] bg-black/60 flex items-start justify-center overflow-y-auto py-6 px-4 no-print-overlay">
+          <div className="fixed inset-0 z-[300] bg-black/60 flex items-start justify-center overflow-y-auto py-6 px-4">
             <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl">
-              <div id="ficha-tecnica-print" className="p-8">
+              <div className="p-8">
                 <div className="text-center mb-6 pb-4 border-b-2 border-[#C4566A]">
                   <p className="text-[0.65rem] font-semibold text-muted uppercase tracking-widest mb-1">Claudia&apos;s Sabor &amp; Afeto</p>
                   <h1 className="text-xl font-bold text-dark">{r.nome}</h1>
@@ -452,26 +488,19 @@ export default function ReceitasPage() {
                 )}
 
                 <p className="text-[0.6rem] text-muted text-center mt-8">
-                  Emitido em {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  Emitido em {new Date().toLocaleDateString("pt-BR")}
                 </p>
               </div>
 
-              <div className="no-print flex gap-2 px-8 pb-6">
+              <div className="flex gap-2 px-8 pb-6">
                 <button onClick={() => setReceitaImprimir(null)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">
                   Fechar
                 </button>
-                <button onClick={() => window.print()} className="flex-1 flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+                <button onClick={imprimir} className="flex-1 flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm py-2.5 rounded-xl transition font-semibold">
                   <Printer size={14} /> Imprimir
                 </button>
               </div>
             </div>
-            <style jsx global>{`
-              @media print {
-                body * { visibility: hidden !important; }
-                #ficha-tecnica-print, #ficha-tecnica-print * { visibility: visible !important; }
-                #ficha-tecnica-print { position: fixed; top: 0; left: 0; width: 100%; padding: 32px; background: white; }
-              }
-            `}</style>
           </div>
         );
       })()}
