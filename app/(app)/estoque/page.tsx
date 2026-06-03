@@ -28,6 +28,8 @@ export default function EstoquePage() {
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
+  const [eqQtd, setEqQtd] = useState(0);
+  const [eqUnidade, setEqUnidade] = useState("g");
 
   function load() {
     if (!conta) return;
@@ -38,12 +40,16 @@ export default function EstoquePage() {
   function openNew() {
     setEditando(null);
     setForm({ ...EMPTY });
+    setEqQtd(0);
+    setEqUnidade("g");
     setModal(true);
   }
 
   function openEdit(i: Insumo) {
     setEditando(i);
     setForm({ ...i });
+    setEqQtd(i.equivalencia?.quantidade ?? 0);
+    setEqUnidade(i.equivalencia?.unidade ?? "g");
     setModal(true);
   }
 
@@ -52,7 +58,12 @@ export default function EstoquePage() {
     if (!form.nome.trim()) { toast.error("Informe o nome do insumo"); return; }
     setSaving(true);
     try {
-      await saveInsumo(conta.id, { ...form, nome: form.nome.trim() }, editando?.id);
+      const data = {
+        ...form,
+        nome: form.nome.trim(),
+        ...(eqQtd > 0 ? { equivalencia: { quantidade: eqQtd, unidade: eqUnidade } } : { equivalencia: undefined }),
+      };
+      await saveInsumo(conta.id, data, editando?.id);
       toast.success(editando ? "Insumo atualizado!" : "Insumo cadastrado!");
       setModal(false);
       load();
@@ -123,7 +134,12 @@ export default function EstoquePage() {
                         {i.nome}
                         {baixo && <AlertTriangle size={12} className="text-amber-500 shrink-0" />}
                       </p>
-                      <p className="text-[0.65rem] text-muted">{i.categoria}</p>
+                      <p className="text-[0.65rem] text-muted">
+                        {i.categoria}
+                        {i.equivalencia && (
+                          <span className="ml-2 text-rose/70">· 1 {i.unidade} = {i.equivalencia.quantidade} {i.equivalencia.unidade}</span>
+                        )}
+                      </p>
                     </div>
                     <div>
                       <span className={`text-sm font-semibold ${baixo ? "text-amber-600" : "text-dark"}`}>
@@ -201,6 +217,33 @@ export default function EstoquePage() {
               <label className="field-label">Fornecedor</label>
               <input className="field-input" value={form.fornecedor ?? ""} onChange={e => setForm(f => ({ ...f, fornecedor: e.target.value }))} placeholder="Ex: Atacadão" />
             </div>
+          </div>
+
+          <div className="border border-rose-light/60 rounded-xl px-3 py-3 space-y-2">
+            <p className="text-[0.68rem] font-semibold text-muted uppercase tracking-wide">Conversão de medida <span className="font-normal normal-case">(opcional)</span></p>
+            <p className="text-[0.7rem] text-muted">Informe quantas {form.unidade === "un" ? "gramas/ml" : "unidades"} tem em 1 {form.unidade}. Assim as receitas calculam o custo corretamente.</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-dark shrink-0">1 {form.unidade} =</span>
+              <input
+                type="number" min="0" step="0.01"
+                className="w-24 border border-rose-light rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-rose-mid"
+                placeholder="Ex: 395"
+                value={eqQtd || ""}
+                onChange={e => setEqQtd(Number(e.target.value))}
+              />
+              <select
+                className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
+                value={eqUnidade}
+                onChange={e => setEqUnidade(e.target.value)}
+              >
+                {UNIDADES.map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+            {eqQtd > 0 && form.custoPorUnidade > 0 && (
+              <p className="text-[0.7rem] text-emerald-700 font-medium">
+                → Custo por {eqUnidade}: {fmt(form.custoPorUnidade / eqQtd)}
+              </p>
+            )}
           </div>
 
           {form.custoPorUnidade > 0 && (

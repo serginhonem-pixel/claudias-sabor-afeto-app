@@ -41,6 +41,7 @@ export interface Insumo {
   nome: string;
   categoria: string;
   unidade: string;
+  equivalencia?: { quantidade: number; unidade: string };
   estoque: number;
   estoqueMinimo: number;
   custoPorUnidade: number;

@@ -45,6 +45,7 @@ export default function ReceitasPage() {
   const [ingredientes, setIngredientes] = useState<IngredienteComCusto[]>([]);
   const [insumoSel, setInsumoSel] = useState("");
   const [qtdSel, setQtdSel] = useState(1);
+  const [unidSel, setUnidSel] = useState("");
 
   function load() {
     if (!conta) return;
@@ -56,12 +57,20 @@ export default function ReceitasPage() {
     getInsumos(conta.id).then(setInsumos);
   }, [conta]);
 
+  function getCustoUnitario(ins: Insumo, unidade: string): number {
+    if (ins.equivalencia && unidade === ins.equivalencia.unidade && ins.equivalencia.quantidade > 0) {
+      return ins.custoPorUnidade / ins.equivalencia.quantidade;
+    }
+    return ins.custoPorUnidade;
+  }
+
   function openNew() {
     setEditando(null);
     setForm({ ...EMPTY_RECEITA, createdAt: new Date() });
     setIngredientes([]);
     setInsumoSel("");
     setQtdSel(1);
+    setUnidSel("");
     setModal(true);
   }
 
@@ -70,11 +79,12 @@ export default function ReceitasPage() {
     setForm({ ...r });
     const ings: IngredienteComCusto[] = r.ingredientes.map(i => {
       const ins = insumos.find(ins => ins.id === i.insumoId);
-      return { ...i, custoPorUnidade: ins?.custoPorUnidade ?? 0 };
+      return { ...i, custoPorUnidade: ins ? getCustoUnitario(ins, i.unidade) : 0 };
     });
     setIngredientes(ings);
     setInsumoSel("");
     setQtdSel(1);
+    setUnidSel("");
     setModal(true);
   }
 
@@ -85,15 +95,17 @@ export default function ReceitasPage() {
     if (ingredientes.find(i => i.insumoId === ins.id)) {
       toast.error("Insumo já adicionado"); return;
     }
+    const unidade = unidSel || ins.unidade;
     setIngredientes(prev => [...prev, {
       insumoId: ins.id,
       insumoNome: ins.nome,
       quantidade: qtdSel,
-      unidade: ins.unidade,
-      custoPorUnidade: ins.custoPorUnidade,
+      unidade,
+      custoPorUnidade: getCustoUnitario(ins, unidade),
     }]);
     setInsumoSel("");
     setQtdSel(1);
+    setUnidSel("");
   }
 
   function removeIngrediente(insumoId: string) {
@@ -272,26 +284,61 @@ export default function ReceitasPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 p-3 bg-cream/50 border-t border-rose-light/40">
-                <select
-                  className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
-                  value={insumoSel}
-                  onChange={e => setInsumoSel(e.target.value)}
-                >
-                  <option value="">Selecione o insumo...</option>
-                  {insumosDisponiveis.map(i => (
-                    <option key={i.id} value={i.id}>{i.nome} ({i.unidade}) — {fmt(i.custoPorUnidade)}/{i.unidade}</option>
-                  ))}
-                </select>
-                <input
-                  type="number" min="0.01" step="0.01"
-                  className="w-20 border border-rose-light rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-rose-mid bg-white"
-                  value={qtdSel}
-                  onChange={e => setQtdSel(Number(e.target.value))}
-                />
-                <button onClick={addIngrediente} className="bg-[#C4566A] hover:bg-[#C4566A]/90 text-white rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0">
-                  + Add
-                </button>
+              <div className="flex flex-col gap-2 p-3 bg-cream/50 border-t border-rose-light/40">
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
+                    value={insumoSel}
+                    onChange={e => {
+                      const id = e.target.value;
+                      setInsumoSel(id);
+                      const ins = insumos.find(i => i.id === id);
+                      setUnidSel(ins?.unidade ?? "");
+                    }}
+                  >
+                    <option value="">Selecione o insumo...</option>
+                    {insumosDisponiveis.map(i => (
+                      <option key={i.id} value={i.id}>{i.nome} ({i.unidade}) — {fmt(i.custoPorUnidade)}/{i.unidade}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number" min="0.01" step="0.01"
+                    className="w-20 border border-rose-light rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-rose-mid bg-white"
+                    value={qtdSel}
+                    onChange={e => setQtdSel(Number(e.target.value))}
+                  />
+                  {(() => {
+                    const ins = insumos.find(i => i.id === insumoSel);
+                    if (ins?.equivalencia) {
+                      return (
+                        <select
+                          className="w-16 border border-rose-light rounded-lg px-1 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
+                          value={unidSel}
+                          onChange={e => setUnidSel(e.target.value)}
+                        >
+                          <option value={ins.unidade}>{ins.unidade}</option>
+                          <option value={ins.equivalencia.unidade}>{ins.equivalencia.unidade}</option>
+                        </select>
+                      );
+                    }
+                    return ins ? <span className="text-xs text-muted w-10 text-center">{ins.unidade}</span> : null;
+                  })()}
+                  <button onClick={addIngrediente} className="bg-[#C4566A] hover:bg-[#C4566A]/90 text-white rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0">
+                    + Add
+                  </button>
+                </div>
+                {(() => {
+                  const ins = insumos.find(i => i.id === insumoSel);
+                  if (ins?.equivalencia && unidSel === ins.equivalencia.unidade) {
+                    const custoG = ins.custoPorUnidade / ins.equivalencia.quantidade;
+                    return (
+                      <p className="text-[0.68rem] text-emerald-700">
+                        Usando em {ins.equivalencia.unidade} · custo: {fmt(custoG)}/{ins.equivalencia.unidade} (1 {ins.unidade} = {ins.equivalencia.quantidade} {ins.equivalencia.unidade} = {fmt(ins.custoPorUnidade)})
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {insumos.length === 0 && (
