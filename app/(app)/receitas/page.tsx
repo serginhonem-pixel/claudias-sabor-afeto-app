@@ -189,7 +189,7 @@ export default function ReceitasPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-heading font-semibold text-base text-caramel-DEFAULT">{fmt(r.custoPorUnidade)}</p>
-                  <p className="text-[0.6rem] text-muted">por unidade</p>
+                  <p className="text-[0.6rem] text-muted">por {r.unidadeRendimento.toLowerCase()}</p>
                 </div>
               </div>
 

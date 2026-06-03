@@ -25,13 +25,22 @@ export default function ProdutosPage() {
   const [editando, setEditando] = useState<Produto | null>(null);
   const [form, setForm] = useState({...EMPTY});
   const [saving, setSaving] = useState(false);
+  const [qtdPorUnidade, setQtdPorUnidade] = useState(0);
 
   function load() { if (!conta) return; getProdutos(conta.id).then(setProdutos); }
   useEffect(load, [conta]);
   useEffect(() => { if (!conta) return; getReceitas(conta.id).then(setReceitas); }, [conta]);
 
-  function openNew() { setEditando(null); setForm({...EMPTY, createdAt: new Date()}); setModal(true); }
-  function openEdit(p: Produto) { setEditando(p); setForm({...p}); setModal(true); }
+  function openNew() { setEditando(null); setForm({...EMPTY, createdAt: new Date()}); setQtdPorUnidade(0); setModal(true); }
+  function openEdit(p: Produto) { setEditando(p); setForm({...p}); setQtdPorUnidade(0); setModal(true); }
+
+  function precisaQtdPorUnidade(receitaId: string | undefined, unidadeVenda: string) {
+    const r = receitas.find(r => r.id === receitaId);
+    if (!r) return false;
+    const un = r.unidadeRendimento.toLowerCase();
+    const venda = unidadeVenda.toLowerCase();
+    return (un === "g" || un === "ml") && venda !== "kg" && venda !== "l";
+  }
 
   function calcCmv(preco: number, custo: number) { return preco > 0 ? Math.round((custo/preco)*100) : 0; }
 
@@ -172,6 +181,7 @@ export default function ProdutosPage() {
             <label className="field-label">Receita Vinculada</label>
             <select className="field-input" value={form.receitaId ?? ""} onChange={e => {
               const r = receitas.find(r => r.id === e.target.value);
+              setQtdPorUnidade(0);
               const custo = r ? arredondar(converterCusto(r.custoPorUnidade, r.unidadeRendimento, form.unidadeVenda)) : form.custoProduto;
               setForm(f => ({ ...f, receitaId: e.target.value || undefined, receitaNome: r?.nome, custoProduto: custo }));
             }}>
@@ -179,6 +189,38 @@ export default function ProdutosPage() {
               {receitas.map(r => <option key={r.id} value={r.id}>{r.nome} (custo: {fmt(r.custoPorUnidade)}/{r.unidadeRendimento})</option>)}
             </select>
           </div>
+
+          {precisaQtdPorUnidade(form.receitaId, form.unidadeVenda) && (() => {
+            const r = receitas.find(r => r.id === form.receitaId)!;
+            const un = r.unidadeRendimento;
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 space-y-2">
+                <p className="text-xs font-semibold text-amber-800">Quantas {un} tem em 1 {form.unidadeVenda.toLowerCase()}?</p>
+                <p className="text-[0.68rem] text-amber-700">A receita rende em {un}, mas o produto é vendido por unidade. Informe a quantidade para calcular o custo corretamente.</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number" min="0" step="0.01"
+                    className="w-28 border border-amber-300 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-amber-400 bg-white"
+                    placeholder={`Ex: 200`}
+                    value={qtdPorUnidade || ""}
+                    onChange={e => {
+                      const qtd = Number(e.target.value);
+                      setQtdPorUnidade(qtd);
+                      if (qtd > 0) {
+                        setForm(f => ({ ...f, custoProduto: arredondar(qtd * r.custoPorUnidade) }));
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-amber-700">{un} por {form.unidadeVenda.toLowerCase()}</span>
+                </div>
+                {qtdPorUnidade > 0 && (
+                  <p className="text-[0.7rem] text-emerald-700 font-medium">
+                    → {qtdPorUnidade} {un} × {fmt(r.custoPorUnidade)}/{un} = <strong>{fmt(arredondar(qtdPorUnidade * r.custoPorUnidade))}</strong> por {form.unidadeVenda.toLowerCase()}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="field-label">Prazo de Produção (dias)</label>
