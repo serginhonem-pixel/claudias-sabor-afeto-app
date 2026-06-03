@@ -82,17 +82,6 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
           <img src="/logo.png" alt={nomeConta} width={190} style={{ display: "block" }} />
         </div>
 
-        {/* Tagline */}
-        <div style={{
-          fontFamily: "'Lora', serif", fontSize: 13, color: "#D8B974",
-          letterSpacing: "0.18em", textTransform: "uppercase",
-          opacity: step1 ? 1 : 0,
-          transform: step1 ? "translateY(0)" : "translateY(10px)",
-          transition: "opacity 0.6s ease 0.2s, transform 0.6s ease 0.2s",
-          marginTop: 6,
-        }}>
-          Sabor e Afeto
-        </div>
 
         {/* Ornamento */}
         <div style={{
