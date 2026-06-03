@@ -27,7 +27,6 @@ export default function ProdutosPage() {
   const [saving, setSaving] = useState(false);
   const [receitasVinculadas, setReceitasVinculadas] = useState<ReceitaVinculada[]>([]);
   const [receitaSelId, setReceitaSelId] = useState("");
-  const [qtdPorUnidade, setQtdPorUnidade] = useState(0);
 
   function load() { if (!conta) return; getProdutos(conta.id).then(setProdutos); }
   useEffect(load, [conta]);
@@ -38,7 +37,6 @@ export default function ProdutosPage() {
     setForm({...EMPTY, createdAt: new Date()});
     setReceitasVinculadas([]);
     setReceitaSelId("");
-    setQtdPorUnidade(0);
     setModal(true);
   }
 
@@ -54,7 +52,6 @@ export default function ProdutosPage() {
       setReceitasVinculadas([]);
     }
     setReceitaSelId("");
-    setQtdPorUnidade(0);
     setModal(true);
   }
 
