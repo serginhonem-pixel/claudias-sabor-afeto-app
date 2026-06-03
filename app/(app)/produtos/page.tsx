@@ -4,9 +4,9 @@ import { useConta } from "@/hooks/useConta";
 import { getProdutos, saveProduto, deleteProduto, getReceitas } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
-import type { Produto, Receita } from "@/types";
+import type { Produto, Receita, ReceitaVinculada } from "@/types";
 
 const CATS = ["Confeitaria","Salgado","Panificado","Kit","Outro"] as const;
 const EMPTY: Omit<Produto,"id"|"contaId"> = {
@@ -25,21 +25,57 @@ export default function ProdutosPage() {
   const [editando, setEditando] = useState<Produto | null>(null);
   const [form, setForm] = useState({...EMPTY});
   const [saving, setSaving] = useState(false);
+  const [receitasVinculadas, setReceitasVinculadas] = useState<ReceitaVinculada[]>([]);
+  const [receitaSelId, setReceitaSelId] = useState("");
   const [qtdPorUnidade, setQtdPorUnidade] = useState(0);
 
   function load() { if (!conta) return; getProdutos(conta.id).then(setProdutos); }
   useEffect(load, [conta]);
   useEffect(() => { if (!conta) return; getReceitas(conta.id).then(setReceitas); }, [conta]);
 
-  function openNew() { setEditando(null); setForm({...EMPTY, createdAt: new Date()}); setQtdPorUnidade(0); setModal(true); }
-  function openEdit(p: Produto) { setEditando(p); setForm({...p}); setQtdPorUnidade(0); setModal(true); }
+  function openNew() {
+    setEditando(null);
+    setForm({...EMPTY, createdAt: new Date()});
+    setReceitasVinculadas([]);
+    setReceitaSelId("");
+    setQtdPorUnidade(0);
+    setModal(true);
+  }
 
-  function precisaQtdPorUnidade(receitaId: string | undefined, unidadeVenda: string) {
-    const r = receitas.find(r => r.id === receitaId);
-    if (!r) return false;
+  function openEdit(p: Produto) {
+    setEditando(p);
+    setForm({...p});
+    // migrar formato antigo (receitaId único) para array
+    if (p.receitasVinculadas?.length) {
+      setReceitasVinculadas(p.receitasVinculadas);
+    } else if (p.receitaId) {
+      setReceitasVinculadas([{ receitaId: p.receitaId, receitaNome: p.receitaNome ?? "" }]);
+    } else {
+      setReceitasVinculadas([]);
+    }
+    setReceitaSelId("");
+    setQtdPorUnidade(0);
+    setModal(true);
+  }
+
+  function precisaQtd(r: Receita, unidadeVenda: string) {
     const un = r.unidadeRendimento.toLowerCase();
     const venda = unidadeVenda.toLowerCase();
     return (un === "g" || un === "ml") && venda !== "kg" && venda !== "l";
+  }
+
+  function custoReceita(r: Receita, rv: ReceitaVinculada, unidadeVenda: string): number {
+    if (precisaQtd(r, unidadeVenda)) {
+      return rv.qtdPorUnidade ? arredondar(rv.qtdPorUnidade * r.custoPorUnidade) : 0;
+    }
+    return arredondar(converterCusto(r.custoPorUnidade, r.unidadeRendimento, unidadeVenda));
+  }
+
+  function calcCustoTotal(rv: ReceitaVinculada[], unidadeVenda: string): number {
+    return arredondar(rv.reduce((sum, rv) => {
+      const r = receitas.find(r => r.id === rv.receitaId);
+      return sum + (r ? custoReceita(r, rv, unidadeVenda) : 0);
+    }, 0));
   }
 
   function calcCmv(preco: number, custo: number) { return preco > 0 ? Math.round((custo/preco)*100) : 0; }
@@ -60,8 +96,19 @@ export default function ProdutosPage() {
     if (!form.nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
     try {
-      const cmv = calcCmv(form.precoVenda, form.custoProduto);
-      await saveProduto(conta.id, { ...form, nome: form.nome.trim(), cmvPercent: cmv }, editando?.id);
+      const custoProduto = receitasVinculadas.length > 0
+        ? calcCustoTotal(receitasVinculadas, form.unidadeVenda)
+        : form.custoProduto;
+      const cmv = calcCmv(form.precoVenda, custoProduto);
+      await saveProduto(conta.id, {
+        ...form,
+        nome: form.nome.trim(),
+        custoProduto,
+        cmvPercent: cmv,
+        receitasVinculadas,
+        receitaId: receitasVinculadas[0]?.receitaId,
+        receitaNome: receitasVinculadas[0]?.receitaNome,
+      }, editando?.id);
       toast.success(editando ? "Produto atualizado!" : "Produto criado!");
       setModal(false); load();
     } catch { toast.error("Erro ao salvar"); }
@@ -98,26 +145,77 @@ export default function ProdutosPage() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtrados.map(p => (
-            <div key={p.id} className="bg-white rounded-xl border border-rose-light/60 p-4 hover:border-rose-mid/40 transition">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="font-semibold text-dark text-sm">{p.nome}</p>
-                  <span className={`text-[0.6rem] font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${catCls[p.categoria]}`}>{p.categoria}</span>
+          {filtrados.map(p => {
+            const margem = p.precoVenda - p.custoProduto;
+            const statusCls = { ativo: "bg-emerald-50 text-emerald-700", encomenda: "bg-amber-50 text-amber-700", inativo: "bg-slate-100 text-slate-500" };
+            const statusLabel = { ativo: "Ativo", encomenda: "Encomenda", inativo: "Inativo" };
+            const todasReceitas = p.receitasVinculadas?.length
+              ? p.receitasVinculadas
+              : p.receitaId ? [{ receitaId: p.receitaId, receitaNome: p.receitaNome ?? "" }] : [];
+            return (
+              <div key={p.id} className="bg-white rounded-xl border border-rose-light/60 overflow-hidden hover:border-rose-mid/40 transition flex flex-col">
+                {/* Imagem */}
+                {p.imagemUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.imagemUrl} alt={p.nome} className="w-full h-36 object-cover" onError={e => (e.currentTarget.style.display = "none")} />
+                )}
+                <div className="p-4 flex flex-col gap-3 flex-1">
+                {/* Cabeçalho */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="font-semibold text-dark text-sm leading-tight">{p.nome}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <span className={`text-[0.6rem] font-semibold px-2 py-0.5 rounded-full ${catCls[p.categoria]}`}>{p.categoria}</span>
+                      <span className={`text-[0.6rem] font-semibold px-2 py-0.5 rounded-full ${statusCls[p.status]}`}>{statusLabel[p.status]}</span>
+                      <span className="text-[0.6rem] text-muted px-2 py-0.5 rounded-full bg-slate-50">{p.unidadeVenda}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-heading font-semibold text-lg text-caramel-DEFAULT leading-tight">{fmt(p.precoVenda)}</p>
+                    <p className="text-[0.6rem] text-muted">venda</p>
+                  </div>
                 </div>
-                <p className="font-heading font-semibold text-lg text-caramel-DEFAULT">{fmt(p.precoVenda)}</p>
-              </div>
-              {p.descricao && <p className="text-xs text-muted mb-2 truncate">{p.descricao}</p>}
-              <div className="flex items-center justify-between text-xs text-muted border-t border-rose-light/40 pt-2 mt-2">
-                <span>CMV: <strong className={p.cmvPercent > 35 ? "text-amber-600" : "text-emerald-600"}>{p.cmvPercent}%</strong></span>
-                <span>Prazo: {p.prazoProduzDias}d</span>
-                <div className="flex gap-1">
-                  <button onClick={() => openEdit(p)} className="p-1 hover:bg-rose-light rounded text-muted hover:text-rose transition"><Pencil size={12}/></button>
-                  <button onClick={() => handleDelete(p.id)} className="p-1 hover:bg-red-50 rounded text-muted hover:text-red-500 transition"><Trash2 size={12}/></button>
+
+                {/* Descrição */}
+                {p.descricao && <p className="text-xs text-muted truncate -mt-1">{p.descricao}</p>}
+
+                {/* Financeiro */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-cream/60 rounded-lg py-1.5">
+                    <p className="text-[0.65rem] text-muted">Custo</p>
+                    <p className="text-xs font-semibold text-dark">{fmt(p.custoProduto)}</p>
+                  </div>
+                  <div className="bg-cream/60 rounded-lg py-1.5">
+                    <p className="text-[0.65rem] text-muted">Margem</p>
+                    <p className={`text-xs font-semibold ${margem >= 0 ? "text-emerald-600" : "text-red-500"}`}>{fmt(margem)}</p>
+                  </div>
+                  <div className={`rounded-lg py-1.5 ${p.cmvPercent > 35 ? "bg-amber-50" : "bg-emerald-50"}`}>
+                    <p className="text-[0.65rem] text-muted">CMV</p>
+                    <p className={`text-xs font-semibold ${p.cmvPercent > 35 ? "text-amber-600" : "text-emerald-600"}`}>{p.cmvPercent}%</p>
+                  </div>
                 </div>
+
+                {/* Receitas vinculadas */}
+                {todasReceitas.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {todasReceitas.map(rv => (
+                      <span key={rv.receitaId} className="text-[0.6rem] bg-rose-light text-rose px-1.5 py-0.5 rounded-full truncate max-w-full">{rv.receitaNome}</span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Rodapé */}
+                <div className="flex items-center justify-between border-t border-rose-light/40 pt-2 -mb-1">
+                  <span className="text-[0.65rem] text-muted">Prazo: <strong className="text-dark">{p.prazoProduzDias}d</strong></span>
+                  <div className="flex gap-1">
+                    <button onClick={() => openEdit(p)} className="p-1 hover:bg-rose-light rounded text-muted hover:text-rose transition"><Pencil size={12}/></button>
+                    <button onClick={() => handleDelete(p.id)} className="p-1 hover:bg-red-50 rounded text-muted hover:text-red-500 transition"><Trash2 size={12}/></button>
+                  </div>
+                </div>
+                </div>{/* fim do padding wrapper */}
               </div>
-            </div>
-          ))}
+            );
+          })}
           <button onClick={openNew} className="bg-white rounded-xl border-2 border-dashed border-rose-light hover:border-rose-mid flex flex-col items-center justify-center gap-2 p-6 min-h-[120px] transition text-muted hover:text-rose">
             <Plus size={24}/><span className="text-xs font-medium">Novo Produto</span>
           </button>
@@ -147,14 +245,7 @@ export default function ProdutosPage() {
             </div>
             <div>
               <label className="field-label">Unidade de Venda</label>
-              <select className="field-input" value={form.unidadeVenda} onChange={e => {
-                const novaUnidade = e.target.value;
-                const receitaVinculada = receitas.find(r => r.id === form.receitaId);
-                const novoCusto = receitaVinculada
-                  ? arredondar(converterCusto(receitaVinculada.custoPorUnidade, receitaVinculada.unidadeRendimento, novaUnidade))
-                  : form.custoProduto;
-                setForm(f => ({ ...f, unidadeVenda: novaUnidade, custoProduto: novoCusto }));
-              }}>
+              <select className="field-input" value={form.unidadeVenda} onChange={e => setForm(f => ({ ...f, unidadeVenda: e.target.value }))}>
                 {["Unidade","Kit 10un","Kit 20un","Kit 30un","Kit 50un","Caixa","Porção","Kg"].map(u=><option key={u}>{u}</option>)}
               </select>
             </div>
@@ -162,65 +253,106 @@ export default function ProdutosPage() {
               <label className="field-label">Preço de Venda (R$)</label>
               <input type="number" min="0" step="0.01" className="field-input" value={form.precoVenda} onChange={e => setForm(f=>({...f,precoVenda:Number(e.target.value)}))} />
             </div>
-            <div>
-              <label className="field-label">Custo do Produto (R$)</label>
-              <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
-              {form.receitaId && (() => {
-                const r = receitas.find(r => r.id === form.receitaId);
-                if (!r) return null;
-                return <p className="text-[0.65rem] text-muted mt-1">Calculado da receita · {fmt(r.custoPorUnidade)}/{r.unidadeRendimento}</p>;
-              })()}
-            </div>
-          </div>
-          {form.precoVenda > 0 && (
-            <div className={`rounded-xl px-4 py-2 text-xs font-semibold flex justify-between ${calcCmv(form.precoVenda,form.custoProduto) > 35 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
-              <span>CMV</span><span>{calcCmv(form.precoVenda,form.custoProduto)}% — Margem: {fmt(form.precoVenda - form.custoProduto)}</span>
-            </div>
-          )}
-          <div>
-            <label className="field-label">Receita Vinculada</label>
-            <select className="field-input" value={form.receitaId ?? ""} onChange={e => {
-              const r = receitas.find(r => r.id === e.target.value);
-              setQtdPorUnidade(0);
-              const custo = r ? arredondar(converterCusto(r.custoPorUnidade, r.unidadeRendimento, form.unidadeVenda)) : form.custoProduto;
-              setForm(f => ({ ...f, receitaId: e.target.value || undefined, receitaNome: r?.nome, custoProduto: custo }));
-            }}>
-              <option value="">— Selecione —</option>
-              {receitas.map(r => <option key={r.id} value={r.id}>{r.nome} (custo: {fmt(r.custoPorUnidade)}/{r.unidadeRendimento})</option>)}
-            </select>
+            {receitasVinculadas.length === 0 && (
+              <div>
+                <label className="field-label">Custo do Produto (R$)</label>
+                <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
+              </div>
+            )}
           </div>
 
-          {precisaQtdPorUnidade(form.receitaId, form.unidadeVenda) && (() => {
-            const r = receitas.find(r => r.id === form.receitaId)!;
-            const un = r.unidadeRendimento;
-            return (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 space-y-2">
-                <p className="text-xs font-semibold text-amber-800">Quantas {un} tem em 1 {form.unidadeVenda.toLowerCase()}?</p>
-                <p className="text-[0.68rem] text-amber-700">A receita rende em {un}, mas o produto é vendido por unidade. Informe a quantidade para calcular o custo corretamente.</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number" min="0" step="0.01"
-                    className="w-28 border border-amber-300 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-amber-400 bg-white"
-                    placeholder={`Ex: 200`}
-                    value={qtdPorUnidade || ""}
-                    onChange={e => {
-                      const qtd = Number(e.target.value);
-                      setQtdPorUnidade(qtd);
-                      if (qtd > 0) {
-                        setForm(f => ({ ...f, custoProduto: arredondar(qtd * r.custoPorUnidade) }));
-                      }
-                    }}
-                  />
-                  <span className="text-sm text-amber-700">{un} por {form.unidadeVenda.toLowerCase()}</span>
+          {/* Receitas vinculadas */}
+          <div>
+            <label className="field-label">Receitas Vinculadas</label>
+            <div className="border border-rose-light/60 rounded-xl overflow-hidden">
+              {receitasVinculadas.length > 0 && (
+                <div className="divide-y divide-rose-light/40">
+                  {receitasVinculadas.map((rv, idx) => {
+                    const r = receitas.find(r => r.id === rv.receitaId);
+                    if (!r) return null;
+                    const needsQtd = precisaQtd(r, form.unidadeVenda);
+                    const custo = custoReceita(r, rv, form.unidadeVenda);
+                    return (
+                      <div key={rv.receitaId} className="px-3 py-2.5 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-dark truncate">{r.nome}</p>
+                            <p className="text-[0.62rem] text-muted">{fmt(r.custoPorUnidade)}/{r.unidadeRendimento}</p>
+                          </div>
+                          <span className="text-xs font-semibold text-emerald-700 shrink-0">{custo > 0 ? fmt(custo) : "—"}</span>
+                          <button onClick={() => setReceitasVinculadas(prev => prev.filter((_, i) => i !== idx))}
+                            className="p-0.5 hover:bg-red-50 rounded text-muted hover:text-red-500 transition shrink-0">
+                            <X size={12} />
+                          </button>
+                        </div>
+                        {needsQtd && (
+                          <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2 py-1.5">
+                            <span className="text-[0.68rem] text-amber-700 shrink-0">Quantas {r.unidadeRendimento} por unidade?</span>
+                            <input
+                              type="number" min="0" step="0.01"
+                              className="w-20 border border-amber-300 rounded px-2 py-0.5 text-xs text-center outline-none focus:border-amber-400 bg-white"
+                              placeholder="Ex: 200"
+                              value={rv.qtdPorUnidade || ""}
+                              onChange={e => {
+                                const qtd = Number(e.target.value);
+                                setReceitasVinculadas(prev => prev.map((item, i) =>
+                                  i === idx ? { ...item, qtdPorUnidade: qtd } : item
+                                ));
+                              }}
+                            />
+                            {rv.qtdPorUnidade && rv.qtdPorUnidade > 0 && (
+                              <span className="text-[0.65rem] text-emerald-700">= {fmt(arredondar(rv.qtdPorUnidade * r.custoPorUnidade))}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                {qtdPorUnidade > 0 && (
-                  <p className="text-[0.7rem] text-emerald-700 font-medium">
-                    → {qtdPorUnidade} {un} × {fmt(r.custoPorUnidade)}/{un} = <strong>{fmt(arredondar(qtdPorUnidade * r.custoPorUnidade))}</strong> por {form.unidadeVenda.toLowerCase()}
-                  </p>
-                )}
+              )}
+
+              {/* Resumo de custo */}
+              {receitasVinculadas.length > 1 && (
+                <div className="px-3 py-2 bg-emerald-50 border-t border-emerald-100 flex justify-between text-xs">
+                  <span className="text-emerald-700 font-medium">Custo total das receitas</span>
+                  <strong className="text-emerald-800">{fmt(calcCustoTotal(receitasVinculadas, form.unidadeVenda))}</strong>
+                </div>
+              )}
+
+              {/* Adicionar receita */}
+              <div className="flex gap-2 p-3 bg-cream/50 border-t border-rose-light/40">
+                <select
+                  className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
+                  value={receitaSelId}
+                  onChange={e => setReceitaSelId(e.target.value)}
+                >
+                  <option value="">+ Adicionar receita...</option>
+                  {receitas.filter(r => !receitasVinculadas.find(rv => rv.receitaId === r.id)).map(r => (
+                    <option key={r.id} value={r.id}>{r.nome} ({fmt(r.custoPorUnidade)}/{r.unidadeRendimento})</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => {
+                    const r = receitas.find(r => r.id === receitaSelId);
+                    if (!r) return;
+                    setReceitasVinculadas(prev => [...prev, { receitaId: r.id, receitaNome: r.nome }]);
+                    setReceitaSelId("");
+                  }}
+                  disabled={!receitaSelId}
+                  className="bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-40 text-white rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0"
+                >
+                  Adicionar
+                </button>
               </div>
-            );
-          })()}
+            </div>
+          </div>
+
+          {form.precoVenda > 0 && (
+            <div className={`rounded-xl px-4 py-2 text-xs font-semibold flex justify-between ${calcCmv(form.precoVenda, receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda) : form.custoProduto) > 35 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+              <span>CMV</span>
+              <span>{calcCmv(form.precoVenda, receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda) : form.custoProduto)}% — Margem: {fmt(form.precoVenda - (receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda) : form.custoProduto))}</span>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="field-label">Prazo de Produção (dias)</label>

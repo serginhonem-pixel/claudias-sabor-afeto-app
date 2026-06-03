@@ -74,6 +74,12 @@ export interface Receita {
 }
 
 // ─── PRODUTO ─────────────────────────────────────────────────────────────────
+export interface ReceitaVinculada {
+  receitaId: string;
+  receitaNome: string;
+  qtdPorUnidade?: number;
+}
+
 export interface Produto {
   id: string;
   contaId: string;
@@ -83,6 +89,7 @@ export interface Produto {
   precoVenda: number;
   receitaId?: string;
   receitaNome?: string;
+  receitasVinculadas?: ReceitaVinculada[];
   custoProduto: number;
   cmvPercent: number;
   descricao?: string;

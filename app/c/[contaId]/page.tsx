@@ -73,10 +73,13 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
           opacity: step1 ? 1 : 0,
           transform: step1 ? "translateY(0)" : "translateY(18px)",
           transition: "opacity 0.7s ease, transform 0.7s ease",
+          background: "#F6EFE1",
+          borderRadius: 14,
+          padding: "14px 22px",
+          boxShadow: "0 6px 32px rgba(0,0,0,0.35)",
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt={nomeConta} width={220}
-            style={{ display: "block", filter: "brightness(0) invert(1)" }} />
+          <img src="/logo.png" alt={nomeConta} width={190} style={{ display: "block" }} />
         </div>
 
         {/* Tagline */}
