@@ -4,7 +4,7 @@ import { useConta } from "@/hooks/useConta";
 import { getInsumos, saveInsumo, deleteInsumo } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Insumo } from "@/types";
 
@@ -28,6 +28,7 @@ export default function EstoquePage() {
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
+  const [avisoExpandido, setAvisoExpandido] = useState(false);
   const [eqQtd, setEqQtd] = useState(0);
   const [eqUnidade, setEqUnidade] = useState("g");
 
@@ -91,12 +92,36 @@ export default function EstoquePage() {
 
       <div className="p-4 md:p-6 max-w-5xl">
         {abaixoMinimo.length > 0 && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
-            <AlertTriangle size={16} className="text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800 mb-1">{abaixoMinimo.length} insumo{abaixoMinimo.length > 1 ? "s" : ""} abaixo do estoque mínimo</p>
-              <p className="text-xs text-amber-700">{abaixoMinimo.map(i => i.nome).join(", ")}</p>
-            </div>
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setAvisoExpandido(v => !v)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-amber-100/50 transition"
+            >
+              <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+              <p className="flex-1 text-sm font-semibold text-amber-800">
+                {abaixoMinimo.length} insumo{abaixoMinimo.length > 1 ? "s" : ""} abaixo do estoque mínimo
+              </p>
+              <ChevronDown
+                size={16}
+                className={`text-amber-600 shrink-0 transition-transform duration-200 ${avisoExpandido ? "rotate-180" : ""}`}
+              />
+            </button>
+            {avisoExpandido && (
+              <div className="border-t border-amber-200 divide-y divide-amber-100">
+                {abaixoMinimo.map(i => (
+                  <div key={i.id} className="flex items-center justify-between px-4 py-2">
+                    <div>
+                      <p className="text-xs font-medium text-amber-900">{i.nome}</p>
+                      <p className="text-[0.65rem] text-amber-600">{i.categoria}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-red-600">{i.estoque} {i.unidade}</p>
+                      <p className="text-[0.65rem] text-amber-600">mín. {i.estoqueMinimo} {i.unidade}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
