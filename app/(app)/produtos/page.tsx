@@ -138,7 +138,14 @@ export default function ProdutosPage() {
             </div>
             <div>
               <label className="field-label">Unidade de Venda</label>
-              <select className="field-input" value={form.unidadeVenda} onChange={e => setForm(f=>({...f,unidadeVenda:e.target.value}))}>
+              <select className="field-input" value={form.unidadeVenda} onChange={e => {
+                const novaUnidade = e.target.value;
+                const receitaVinculada = receitas.find(r => r.id === form.receitaId);
+                const novoCusto = receitaVinculada
+                  ? arredondar(converterCusto(receitaVinculada.custoPorUnidade, receitaVinculada.unidadeRendimento, novaUnidade))
+                  : form.custoProduto;
+                setForm(f => ({ ...f, unidadeVenda: novaUnidade, custoProduto: novoCusto }));
+              }}>
                 {["Unidade","Kit 10un","Kit 20un","Kit 30un","Kit 50un","Caixa","Porção","Kg"].map(u=><option key={u}>{u}</option>)}
               </select>
             </div>
@@ -149,6 +156,11 @@ export default function ProdutosPage() {
             <div>
               <label className="field-label">Custo do Produto (R$)</label>
               <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
+              {form.receitaId && (() => {
+                const r = receitas.find(r => r.id === form.receitaId);
+                if (!r) return null;
+                return <p className="text-[0.65rem] text-muted mt-1">Calculado da receita · {fmt(r.custoPorUnidade)}/{r.unidadeRendimento}</p>;
+              })()}
             </div>
           </div>
           {form.precoVenda > 0 && (
