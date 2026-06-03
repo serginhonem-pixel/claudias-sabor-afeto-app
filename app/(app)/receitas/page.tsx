@@ -4,7 +4,7 @@ import { useConta } from "@/hooks/useConta";
 import { getReceitas, saveReceita, deleteReceita, getInsumos } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Receita, Insumo, IngredienteReceita } from "@/types";
 
@@ -36,6 +36,7 @@ export default function ReceitasPage() {
   const { conta } = useConta();
   const [receitas, setReceitas] = useState<Receita[]>([]);
   const [insumos, setInsumos] = useState<Insumo[]>([]);
+  const [receitaImprimir, setReceitaImprimir] = useState<Receita | null>(null);
   const [filtro, setFiltro] = useState("todos");
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Receita | null>(null);
@@ -208,6 +209,7 @@ export default function ReceitasPage() {
                   )}
                 </div>
                 <div className="flex gap-1 shrink-0">
+                  <button onClick={() => setReceitaImprimir(r)} className="p-1 hover:bg-rose-light rounded text-muted hover:text-rose transition" title="Ficha técnica"><Printer size={12} /></button>
                   <button onClick={() => openEdit(r)} className="p-1 hover:bg-rose-light rounded text-muted hover:text-rose transition"><Pencil size={12} /></button>
                   <button onClick={() => handleDelete(r.id)} className="p-1 hover:bg-red-50 rounded text-muted hover:text-red-500 transition"><Trash2 size={12} /></button>
                 </div>
@@ -381,6 +383,99 @@ export default function ReceitasPage() {
           .field-input:focus{border-color:#E8A0AE;box-shadow:0 0 0 3px rgba(196,86,106,.08)}
         `}</style>
       </Modal>
+
+      {/* Ficha Técnica */}
+      {receitaImprimir && (() => {
+        const r = receitaImprimir;
+        const ings = r.ingredientes.map(ing => {
+          const ins = insumos.find(i => i.id === ing.insumoId);
+          const custoUnit = ins ? getCustoUnitario(ins, ing.unidade) : 0;
+          return { ...ing, custoUnit, subtotal: ing.quantidade * custoUnit };
+        });
+        const total = ings.reduce((s, i) => s + i.subtotal, 0);
+        const porUnidade = r.rendimento > 0 ? total / r.rendimento : 0;
+
+        return (
+          <div className="fixed inset-0 z-[300] bg-black/60 flex items-start justify-center overflow-y-auto py-6 px-4 no-print-overlay">
+            <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl">
+              <div id="ficha-tecnica-print" className="p-8">
+                <div className="text-center mb-6 pb-4 border-b-2 border-[#C4566A]">
+                  <p className="text-[0.65rem] font-semibold text-muted uppercase tracking-widest mb-1">Claudia&apos;s Sabor &amp; Afeto</p>
+                  <h1 className="text-xl font-bold text-dark">{r.nome}</h1>
+                  <div className="flex justify-center gap-4 mt-2 text-xs text-muted">
+                    <span>{r.categoria}</span>
+                    {r.tempoPreparo && <span>· {r.tempoPreparo}</span>}
+                    <span>· Rend.: {r.rendimento} {r.unidadeRendimento}</span>
+                  </div>
+                </div>
+
+                <h2 className="text-xs font-bold uppercase tracking-widest text-muted mb-3">Ingredientes</h2>
+                <table className="w-full text-sm mb-6">
+                  <thead>
+                    <tr className="border-b border-rose-light/60 text-[0.65rem] font-semibold text-muted uppercase">
+                      <th className="text-left pb-2">Ingrediente</th>
+                      <th className="text-right pb-2">Qtd</th>
+                      <th className="text-right pb-2">Un</th>
+                      <th className="text-right pb-2">R$/un</th>
+                      <th className="text-right pb-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-rose-light/30">
+                    {ings.map(ing => (
+                      <tr key={ing.insumoId}>
+                        <td className="py-2 text-dark font-medium">{ing.insumoNome}</td>
+                        <td className="py-2 text-right text-muted">{ing.quantidade}</td>
+                        <td className="py-2 text-right text-muted">{ing.unidade}</td>
+                        <td className="py-2 text-right text-muted">{fmt(ing.custoUnit)}</td>
+                        <td className="py-2 text-right font-medium text-dark">{fmt(ing.subtotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm space-y-1 mb-6">
+                  <div className="flex justify-between">
+                    <span className="text-emerald-700">Custo total</span>
+                    <strong className="text-emerald-800">{fmt(total)}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-emerald-700">Custo por {r.unidadeRendimento.toLowerCase()}</span>
+                    <strong className="text-emerald-800">{fmt(porUnidade)}</strong>
+                  </div>
+                </div>
+
+                {r.modoPreparo && (
+                  <>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted mb-3">Modo de Preparo</h2>
+                    <p className="text-sm text-dark whitespace-pre-wrap leading-relaxed">{r.modoPreparo}</p>
+                  </>
+                )}
+
+                <p className="text-[0.6rem] text-muted text-center mt-8">
+                  Emitido em {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                </p>
+              </div>
+
+              <div className="no-print flex gap-2 px-8 pb-6">
+                <button onClick={() => setReceitaImprimir(null)} className="flex-1 border border-rose-light text-muted text-sm py-2.5 rounded-xl hover:bg-rose-light/30 transition font-medium">
+                  Fechar
+                </button>
+                <button onClick={() => window.print()} className="flex-1 flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm py-2.5 rounded-xl transition font-semibold">
+                  <Printer size={14} /> Imprimir
+                </button>
+              </div>
+            </div>
+            <style jsx global>{`
+              @media print {
+                body > * { display: none !important; }
+                #ficha-tecnica-print { display: block !important; position: fixed; top: 0; left: 0; width: 100%; padding: 32px; background: white; }
+                #ficha-tecnica-print * { visibility: visible !important; }
+                .no-print { display: none !important; }
+              }
+            `}</style>
+          </div>
+        );
+      })()}
     </>
   );
 }
