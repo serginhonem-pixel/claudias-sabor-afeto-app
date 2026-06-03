@@ -2,9 +2,8 @@
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
 import { updateConta } from "@/lib/firestore";
-import { seedDados, limparDados } from "@/lib/seed";
 import { Topbar } from "@/components/layout/Topbar";
-import { Save, FlaskConical, Trash2, Link2, Copy, Plus, X } from "lucide-react";
+import { Save, Link2, Copy, Plus, X } from "lucide-react";
 import toast from "react-hot-toast";
 import type { CustoFixo } from "@/types";
 
@@ -14,8 +13,6 @@ export default function ConfigPage() {
   const [telefone, setTelefone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [saving, setSaving] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const [clearing, setClearing] = useState(false);
   const [custosFixos, setCustosFixos] = useState<CustoFixo[]>([]);
   const [savingCustos, setSavingCustos] = useState(false);
 
@@ -26,36 +23,6 @@ export default function ConfigPage() {
     setInstagram(conta.instagram ?? "");
     setCustosFixos(conta.custosFixos ?? []);
   }, [conta]);
-
-  async function handleSeed() {
-    if (!conta) return;
-    if (!confirm("Isso vai apagar todos os dados atuais e carregar os dados de exemplo. Confirmar?")) return;
-    setSeeding(true);
-    try {
-      await seedDados(conta.id);
-      toast.success("Dados de exemplo carregados! Explore o app.");
-    } catch (e) {
-      console.error(e);
-      toast.error("Erro ao carregar dados. Verifique o Firebase.");
-    } finally {
-      setSeeding(false);
-    }
-  }
-
-  async function handleClear() {
-    if (!conta) return;
-    if (!confirm("Isso vai apagar TODOS os dados (insumos, receitas, produtos, clientes e pedidos). Confirmar?")) return;
-    setClearing(true);
-    try {
-      await limparDados(conta.id);
-      toast.success("Todos os dados foram apagados.");
-    } catch (e) {
-      console.error(e);
-      toast.error("Erro ao apagar dados.");
-    } finally {
-      setClearing(false);
-    }
-  }
 
   function addCustoFixo() {
     setCustosFixos(prev => [...prev, { id: crypto.randomUUID(), nome: "", valor: 0 }]);
@@ -225,41 +192,6 @@ export default function ConfigPage() {
           )}
         </div>
 
-        {/* Dados de exemplo */}
-        <div className="bg-white rounded-xl border border-rose-light/60 p-5">
-          <div className="flex items-start gap-3 mb-4">
-            <FlaskConical size={18} className="text-rose mt-0.5 shrink-0" />
-            <div>
-              <h2 className="font-heading font-semibold text-dark text-sm">Dados de Exemplo</h2>
-              <p className="text-xs text-muted mt-1">
-                Popula o app com insumos, receitas, produtos, clientes e pedidos fictícios para você explorar todas as funcionalidades. <strong className="text-dark">Apaga tudo que tiver cadastrado antes.</strong>
-              </p>
-            </div>
-          </div>
-          <div className="bg-rose-light/30 rounded-xl p-3 mb-4 text-xs text-muted space-y-1">
-            <p>📦 <strong className="text-dark">12 insumos</strong> — farinhas, chocolates, laticínios, embalagens</p>
-            <p>📖 <strong className="text-dark">3 receitas</strong> — Bolo de Chocolate, Brigadeiro Gourmet, Torta de Limão</p>
-            <p>🎂 <strong className="text-dark">5 produtos</strong> — com CMV calculado automaticamente</p>
-            <p>👥 <strong className="text-dark">5 clientes</strong> — com WhatsApp e informações completas</p>
-            <p>🛍️ <strong className="text-dark">5 pedidos</strong> — em diferentes status (aguardando, produção, pronto, entregue)</p>
-          </div>
-          <button
-            onClick={handleSeed}
-            disabled={seeding || clearing}
-            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-rose-mid/40 hover:border-rose hover:bg-rose-light/20 text-rose text-sm font-semibold py-2.5 rounded-xl transition disabled:opacity-60"
-          >
-            <FlaskConical size={15} />
-            {seeding ? "Carregando dados..." : "Carregar dados de exemplo"}
-          </button>
-          <button
-            onClick={handleClear}
-            disabled={clearing || seeding}
-            className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-600 hover:bg-red-50 text-sm font-medium py-2 rounded-xl transition disabled:opacity-60 mt-1"
-          >
-            <Trash2 size={14} />
-            {clearing ? "Apagando..." : "Apagar todos os dados"}
-          </button>
-        </div>
 
         {/* Sobre o app */}
         <div className="bg-white rounded-xl border border-rose-light/60 p-5">
