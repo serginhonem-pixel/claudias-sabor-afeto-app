@@ -35,6 +35,17 @@ export default function ProdutosPage() {
 
   function calcCmv(preco: number, custo: number) { return preco > 0 ? Math.round((custo/preco)*100) : 0; }
 
+  function converterCusto(custoPorUnidade: number, unidadeReceita: string, unidadeVenda: string): number {
+    const un = unidadeReceita.toLowerCase();
+    const venda = unidadeVenda.toLowerCase();
+    if (un === "g" && venda === "kg") return custoPorUnidade * 1000;
+    if (un === "ml" && venda === "l") return custoPorUnidade * 1000;
+    if (un === "kg" && venda === "g") return custoPorUnidade / 1000;
+    return custoPorUnidade;
+  }
+
+  function arredondar(v: number) { return Math.round(v * 100) / 100; }
+
   async function handleSave() {
     if (!conta) return;
     if (!form.nome.trim()) { toast.error("Informe o nome"); return; }
@@ -137,7 +148,7 @@ export default function ProdutosPage() {
             </div>
             <div>
               <label className="field-label">Custo do Produto (R$)</label>
-              <input type="number" min="0" step="0.01" className="field-input" value={form.custoProduto} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
+              <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
             </div>
           </div>
           {form.precoVenda > 0 && (
@@ -147,9 +158,13 @@ export default function ProdutosPage() {
           )}
           <div>
             <label className="field-label">Receita Vinculada</label>
-            <select className="field-input" value={form.receitaId ?? ""} onChange={e => { const r = receitas.find(r=>r.id===e.target.value); setForm(f=>({...f,receitaId:e.target.value||undefined,receitaNome:r?.nome,custoProduto:r?.custoPorUnidade??f.custoProduto})); }}>
+            <select className="field-input" value={form.receitaId ?? ""} onChange={e => {
+              const r = receitas.find(r => r.id === e.target.value);
+              const custo = r ? arredondar(converterCusto(r.custoPorUnidade, r.unidadeRendimento, form.unidadeVenda)) : form.custoProduto;
+              setForm(f => ({ ...f, receitaId: e.target.value || undefined, receitaNome: r?.nome, custoProduto: custo }));
+            }}>
               <option value="">— Selecione —</option>
-              {receitas.map(r => <option key={r.id} value={r.id}>{r.nome} (custo: {fmt(r.custoPorUnidade)})</option>)}
+              {receitas.map(r => <option key={r.id} value={r.id}>{r.nome} (custo: {fmt(r.custoPorUnidade)}/{r.unidadeRendimento})</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
