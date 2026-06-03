@@ -285,25 +285,26 @@ export default function ReceitasPage() {
               )}
 
               <div className="flex flex-col gap-2 p-3 bg-cream/50 border-t border-rose-light/40">
+                <select
+                  className="w-full border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
+                  value={insumoSel}
+                  onChange={e => {
+                    const id = e.target.value;
+                    setInsumoSel(id);
+                    const ins = insumos.find(i => i.id === id);
+                    setUnidSel(ins?.unidade ?? "");
+                  }}
+                >
+                  <option value="">Selecione o insumo...</option>
+                  {insumosDisponiveis.map(i => (
+                    <option key={i.id} value={i.id}>{i.nome} ({i.unidade}) — {fmt(i.custoPorUnidade)}/{i.unidade}</option>
+                  ))}
+                </select>
                 <div className="flex items-center gap-2">
-                  <select
-                    className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
-                    value={insumoSel}
-                    onChange={e => {
-                      const id = e.target.value;
-                      setInsumoSel(id);
-                      const ins = insumos.find(i => i.id === id);
-                      setUnidSel(ins?.unidade ?? "");
-                    }}
-                  >
-                    <option value="">Selecione o insumo...</option>
-                    {insumosDisponiveis.map(i => (
-                      <option key={i.id} value={i.id}>{i.nome} ({i.unidade}) — {fmt(i.custoPorUnidade)}/{i.unidade}</option>
-                    ))}
-                  </select>
                   <input
                     type="number" min="0.01" step="0.01"
-                    className="w-20 border border-rose-light rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-rose-mid bg-white"
+                    className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-rose-mid bg-white"
+                    placeholder="Qtd"
                     value={qtdSel}
                     onChange={e => setQtdSel(Number(e.target.value))}
                   />
@@ -312,7 +313,7 @@ export default function ReceitasPage() {
                     if (ins?.equivalencia) {
                       return (
                         <select
-                          className="w-16 border border-rose-light rounded-lg px-1 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
+                          className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
                           value={unidSel}
                           onChange={e => setUnidSel(e.target.value)}
                         >
@@ -321,10 +322,11 @@ export default function ReceitasPage() {
                         </select>
                       );
                     }
-                    return ins ? <span className="text-xs text-muted w-10 text-center">{ins.unidade}</span> : null;
+                    const ins2 = insumos.find(i => i.id === insumoSel);
+                    return ins2 ? <span className="text-xs text-muted px-2">{ins2.unidade}</span> : null;
                   })()}
-                  <button onClick={addIngrediente} className="bg-[#C4566A] hover:bg-[#C4566A]/90 text-white rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0">
-                    + Add
+                  <button onClick={addIngrediente} className="bg-[#C4566A] hover:bg-[#C4566A]/90 text-white rounded-lg px-4 py-1.5 text-xs font-semibold transition shrink-0">
+                    + Adicionar
                   </button>
                 </div>
                 {(() => {
