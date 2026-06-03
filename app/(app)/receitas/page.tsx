@@ -309,8 +309,9 @@ export default function ReceitasPage() {
                     onChange={e => setQtdSel(Number(e.target.value))}
                   />
                   {(() => {
-                    const ins = insumos.find(i => i.id === insumoSel);
-                    if (ins?.equivalencia) {
+                    const ins = insumosDisponiveis.find(i => i.id === insumoSel);
+                    if (!ins) return null;
+                    if (ins.equivalencia) {
                       return (
                         <select
                           className="flex-1 border border-rose-light rounded-lg px-2 py-1.5 text-xs outline-none focus:border-rose-mid bg-white"
@@ -322,15 +323,14 @@ export default function ReceitasPage() {
                         </select>
                       );
                     }
-                    const ins2 = insumos.find(i => i.id === insumoSel);
-                    return ins2 ? <span className="text-xs text-muted px-2">{ins2.unidade}</span> : null;
+                    return <span className="text-xs text-muted px-2">{ins.unidade}</span>;
                   })()}
                   <button onClick={addIngrediente} className="bg-[#C4566A] hover:bg-[#C4566A]/90 text-white rounded-lg px-4 py-1.5 text-xs font-semibold transition shrink-0">
                     + Adicionar
                   </button>
                 </div>
                 {(() => {
-                  const ins = insumos.find(i => i.id === insumoSel);
+                  const ins = insumosDisponiveis.find(i => i.id === insumoSel);
                   if (ins?.equivalencia && unidSel === ins.equivalencia.unidade) {
                     const custoG = ins.custoPorUnidade / ins.equivalencia.quantidade;
                     return (
