@@ -97,7 +97,7 @@ export default function ComprasPage() {
   function toggleInsumo(id: string) {
     setSelecionados(prev => {
       if (id in prev) {
-        const { [id]: _, ...rest } = prev;
+        const rest = Object.fromEntries(Object.entries(prev).filter(([k]) => k !== id));
         return rest;
       }
       return { ...prev, [id]: 1 };
