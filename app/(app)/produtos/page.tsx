@@ -9,6 +9,17 @@ import toast from "react-hot-toast";
 import type { Produto, Receita, ReceitaVinculada } from "@/types";
 
 const CATS = ["Confeitaria","Salgado","Panificado","Kit","Outro"] as const;
+
+function toDirectImageUrl(url: string): string {
+  // Converte URLs do Google Drive para URL direta de imagem
+  const matchFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (matchFile) return `https://drive.google.com/thumbnail?id=${matchFile[1]}&sz=w800`;
+  const matchOpen = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (matchOpen) return `https://drive.google.com/thumbnail?id=${matchOpen[1]}&sz=w800`;
+  const matchUc = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/);
+  if (matchUc) return `https://drive.google.com/thumbnail?id=${matchUc[1]}&sz=w800`;
+  return url;
+}
 const EMPTY: Omit<Produto,"id"|"contaId"> = {
   nome:"", categoria:"Confeitaria", unidadeVenda:"Unidade", precoVenda:0,
   custoProduto:0, cmvPercent:0, descricao:"", prazoProduzDias:1, status:"ativo", createdAt: new Date(),
@@ -154,7 +165,7 @@ export default function ProdutosPage() {
                 {/* Imagem */}
                 {p.imagemUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.imagemUrl} alt={p.nome} className="w-full h-36 object-cover" onError={e => (e.currentTarget.style.display = "none")} />
+                  <img src={toDirectImageUrl(p.imagemUrl)} alt={p.nome} className="w-full h-36 object-cover" onError={e => (e.currentTarget.style.display = "none")} />
                 )}
                 <div className="p-4 flex flex-col gap-3 flex-1">
                 {/* Cabeçalho */}
@@ -371,7 +382,7 @@ export default function ProdutosPage() {
             <input className="field-input" value={form.imagemUrl ?? ""} onChange={e => setForm(f=>({...f,imagemUrl:e.target.value}))} placeholder="https://..." />
             {form.imagemUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.imagemUrl} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl border border-rose-light" onError={e => (e.currentTarget.style.display = "none")} />
+              <img src={toDirectImageUrl(form.imagemUrl)} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl border border-rose-light" onError={e => (e.currentTarget.style.display = "none")} />
             )}
           </div>
           <div className="flex gap-2 pt-2 border-t border-rose-light/60">
