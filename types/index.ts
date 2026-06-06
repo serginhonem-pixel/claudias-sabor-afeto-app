@@ -127,6 +127,7 @@ export interface Pedido {
   status: StatusPedido;
   obs?: string;
   personalizacao?: string;
+  enderecoEntrega?: string;
   createdAt: Date;
   updatedAt: Date;
 }

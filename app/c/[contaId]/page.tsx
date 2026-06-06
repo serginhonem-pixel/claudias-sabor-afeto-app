@@ -229,6 +229,7 @@ export default function PedidoClientePage() {
         precoUnit: i.produto.precoVenda,
         subtotal: i.produto.precoVenda * i.quantidade,
       }));
+      const enderecoEntrega = [endereco.trim(), numEnd.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
       await savePedido(contaId, {
         numero,
         clienteId: "",
@@ -243,6 +244,7 @@ export default function PedidoClientePage() {
         status: "aguardando",
         obs: obs.trim(),
         personalizacao: personalizacao.trim(),
+        enderecoEntrega: enderecoEntrega || undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

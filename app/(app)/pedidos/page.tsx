@@ -274,6 +274,7 @@ export default function PedidosPage() {
         <ComandaModal
           pedido={detalhe}
           contaNome={conta?.nome ?? ""}
+          clientes={clientes}
           onClose={() => setDetalhe(null)}
           onEdit={() => { openEdit(detalhe); setDetalhe(null); }}
         />
@@ -474,7 +475,7 @@ function KanbanCard({ pedido: p, isDragging, overlay, onAvancar, onEdit, onView 
 
 // ── Comanda ────────────────────────────────────────────────────────────────────
 
-function printComanda(p: Pedido, contaNome: string) {
+function printComanda(p: Pedido, contaNome: string, enderecoFormatado: string) {
   const win = window.open("", "_blank", "width=640,height=900");
   if (!win) return;
   const fmtR = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -519,6 +520,7 @@ function printComanda(p: Pedido, contaNome: string) {
     <div class="box"><div class="lbl">Nome</div><div class="val">${p.clienteNome}</div></div>
     <div class="box"><div class="lbl">WhatsApp</div><div class="val">${p.clienteWhatsapp}</div></div>
   </div>
+  ${enderecoFormatado ? `<div class="box" style="margin-top:8px"><div class="lbl">Endereço de entrega</div><div class="val" style="font-size:12px">📍 ${enderecoFormatado}</div></div>` : ""}
 </div>
 <div class="sec">
   <div class="sec-title">Entrega &amp; Pagamento</div>
@@ -554,9 +556,10 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   cancelado:  { label: "Cancelado",   cls: "bg-red-50 text-red-500 border-red-200" },
 };
 
-function ComandaModal({ pedido: p, contaNome, onClose, onEdit }: {
+function ComandaModal({ pedido: p, contaNome, clientes, onClose, onEdit }: {
   pedido: Pedido;
   contaNome: string;
+  clientes: Cliente[];
   onClose: () => void;
   onEdit: () => void;
 }) {
@@ -565,6 +568,9 @@ function ComandaModal({ pedido: p, contaNome, onClose, onEdit }: {
   const criadoEm = p.createdAt instanceof Date ? p.createdAt : new Date((p.createdAt as unknown as { seconds: number }).seconds * 1000);
   const statusCfg = STATUS_CFG[p.status];
   const atrasado = p.dataEntrega < new Date().toISOString().slice(0, 10) && p.status !== "entregue" && p.status !== "cancelado";
+  const clienteCad = clientes.find(c => c.id === p.clienteId);
+  const enderecoFormatado = p.enderecoEntrega ||
+    (clienteCad ? [clienteCad.endereco, clienteCad.numero, clienteCad.complemento, clienteCad.bairro, clienteCad.cidade].filter(Boolean).join(", ") : "");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50" onClick={onClose}>
@@ -578,7 +584,7 @@ function ComandaModal({ pedido: p, contaNome, onClose, onEdit }: {
             {atrasado && <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Atrasado</span>}
           </div>
           <div className="flex items-center gap-1.5">
-            <button onClick={() => printComanda(p, contaNome)} className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-dark bg-rose-light/40 hover:bg-rose-light px-3 py-1.5 rounded-lg transition">
+            <button onClick={() => printComanda(p, contaNome, enderecoFormatado)} className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-dark bg-rose-light/40 hover:bg-rose-light px-3 py-1.5 rounded-lg transition">
               <Printer size={13} /> Imprimir / PDF
             </button>
             <button onClick={onEdit} className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#C4566A] hover:bg-[#b04d60] px-3 py-1.5 rounded-lg transition">
@@ -607,6 +613,12 @@ function ComandaModal({ pedido: p, contaNome, onClose, onEdit }: {
                   className="text-sm font-semibold text-emerald-600 hover:underline">{p.clienteWhatsapp}</a>
               </div>
             </div>
+            {enderecoFormatado && (
+              <div className="bg-cream/60 rounded-xl px-3 py-2.5 mt-2">
+                <p className="text-[0.6rem] text-muted mb-0.5">Endereço de entrega</p>
+                <p className="text-sm text-dark">📍 {enderecoFormatado}</p>
+              </div>
+            )}
           </div>
 
           {/* Entrega & Pagamento */}
