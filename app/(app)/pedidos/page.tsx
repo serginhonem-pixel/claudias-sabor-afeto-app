@@ -4,7 +4,7 @@ import { useConta } from "@/hooks/useConta";
 import { listenPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns, Banknote } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns, Banknote, Eye, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Pedido, Cliente, Produto, ItemPedido, StatusPedido } from "@/types";
 import {
@@ -48,6 +48,7 @@ export default function PedidosPage() {
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Pedido | null>(null);
   const [saving, setSaving] = useState(false);
+  const [detalhe, setDetalhe] = useState<Pedido | null>(null);
 
   const [clienteId, setClienteId] = useState("");
   const [itens, setItens] = useState<ItemPedido[]>([]);
@@ -218,6 +219,7 @@ export default function PedidosPage() {
                         <Banknote size={14} />
                       </button>
                       <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition"><MessageCircle size={14} /></a>
+                      <button onClick={() => setDetalhe(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition" title="Ver detalhes"><Eye size={14} /></button>
                       <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition"><Pencil size={14} /></button>
                       <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition"><Trash2 size={14} /></button>
                     </div>
@@ -244,7 +246,7 @@ export default function PedidosPage() {
                   <KanbanColuna key={col} id={col} colCfg={colCfg} count={cards.length}>
                     {cards.map(p => (
                       <KanbanCard key={p.id} pedido={p} isDragging={draggingId === p.id}
-                        onAvancar={() => avancarStatus(p)} onEdit={() => openEdit(p)} />
+                        onAvancar={() => avancarStatus(p)} onEdit={() => openEdit(p)} onView={() => setDetalhe(p)} />
                     ))}
                   </KanbanColuna>
                 );
@@ -253,7 +255,7 @@ export default function PedidosPage() {
             <DragOverlay>
               {draggingId && (() => {
                 const p = pedidos.find(x => x.id === draggingId);
-                return p ? <KanbanCard pedido={p} isDragging overlay onAvancar={() => {}} onEdit={() => {}} /> : null;
+                return p ? <KanbanCard pedido={p} isDragging overlay onAvancar={() => {}} onEdit={() => {}} onView={() => {}} /> : null;
               })()}
             </DragOverlay>
           </DndContext>
@@ -267,6 +269,15 @@ export default function PedidosPage() {
       >
         <Plus size={18} /> Novo Pedido
       </button>
+
+      {detalhe && (
+        <ComandaModal
+          pedido={detalhe}
+          contaNome={conta?.nome ?? ""}
+          onClose={() => setDetalhe(null)}
+          onEdit={() => { openEdit(detalhe); setDetalhe(null); }}
+        />
+      )}
 
       <Modal open={modal} onClose={() => setModal(false)} title={editando ? "Editar Pedido" : "Novo Pedido"} size="lg">
         <div className="space-y-4">
@@ -399,12 +410,13 @@ function KanbanColuna({ id, colCfg, count, children }: {
   );
 }
 
-function KanbanCard({ pedido: p, isDragging, overlay, onAvancar, onEdit }: {
+function KanbanCard({ pedido: p, isDragging, overlay, onAvancar, onEdit, onView }: {
   pedido: Pedido;
   isDragging?: boolean;
   overlay?: boolean;
   onAvancar: () => void;
   onEdit: () => void;
+  onView: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: p.id });
   const atrasado = p.dataEntrega < new Date().toISOString().slice(0, 10) && p.status !== "entregue";
@@ -451,9 +463,226 @@ function KanbanCard({ pedido: p, isDragging, overlay, onAvancar, onEdit }: {
               <button onClick={onAvancar} className="p-1 rounded-lg bg-rose-light hover:bg-rose-mid/30 text-rose transition"><CheckCircle2 size={12} /></button>
             )}
             <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded-lg hover:bg-emerald-50 text-emerald-600 transition"><MessageCircle size={12} /></a>
+            <button onClick={onView} className="p-1 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition" title="Ver detalhes"><Eye size={12} /></button>
             <button onClick={onEdit} className="p-1 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition"><Pencil size={12} /></button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Comanda ────────────────────────────────────────────────────────────────────
+
+function printComanda(p: Pedido, contaNome: string) {
+  const win = window.open("", "_blank", "width=640,height=900");
+  if (!win) return;
+  const fmtR = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const fmtDate = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("pt-BR");
+  const statusLabel: Record<string, string> = { aguardando: "Aguardando", producao: "Em Produção", pronto: "Pronto", entregue: "Entregue", cancelado: "Cancelado" };
+  const criadoEm = p.createdAt instanceof Date ? p.createdAt : new Date((p.createdAt as unknown as { seconds: number }).seconds * 1000);
+
+  win.document.write(`<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<title>Pedido #${p.numero} — ${contaNome}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Georgia',serif;color:#2A1F1A;background:#fff;padding:36px;max-width:560px;margin:0 auto}
+  .header{text-align:center;border-bottom:2px solid #FAEDEF;padding-bottom:18px;margin-bottom:20px}
+  .logo{font-size:22px;font-weight:700;color:#C4566A;letter-spacing:.04em}
+  .sub{font-size:10px;color:#7A6860;margin-top:3px;letter-spacing:.12em;text-transform:uppercase}
+  .num{font-size:13px;color:#7A6860;margin-top:6px}
+  .sec{margin-bottom:18px}
+  .sec-title{font-size:9px;font-weight:700;color:#7A6860;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .box{background:#FDF8F4;border:1px solid #FAEDEF;border-radius:8px;padding:9px 12px}
+  .lbl{font-size:9px;color:#7A6860;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+  .val{font-size:13px;font-weight:600;color:#2A1F1A}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:9px;font-weight:700;color:#7A6860;text-transform:uppercase;letter-spacing:.08em;padding:5px 0;border-bottom:1px solid #FAEDEF;text-align:left}
+  th:last-child,td:last-child{text-align:right}
+  td{font-size:12px;padding:8px 0;border-bottom:1px solid #FAEDEF}
+  .tr{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#7A6860}
+  .tf{display:flex;justify-content:space-between;font-size:17px;font-weight:700;color:#C4566A;padding-top:8px;margin-top:4px;border-top:2px solid #FAEDEF}
+  .note{background:#FDF8F4;border:1px solid #FAEDEF;border-radius:8px;padding:10px 12px;font-size:12px}
+  .footer{text-align:center;font-size:10px;color:#7A6860;margin-top:24px;padding-top:14px;border-top:1px solid #FAEDEF}
+  @media print{body{padding:16px}}
+</style></head><body>
+<div class="header">
+  <div class="logo">${contaNome}</div>
+  <div class="sub">Confeitaria Artesanal</div>
+  <div class="num">Pedido #${p.numero} &nbsp;·&nbsp; ${criadoEm.toLocaleDateString("pt-BR")}</div>
+</div>
+<div class="sec">
+  <div class="sec-title">Cliente</div>
+  <div class="grid2">
+    <div class="box"><div class="lbl">Nome</div><div class="val">${p.clienteNome}</div></div>
+    <div class="box"><div class="lbl">WhatsApp</div><div class="val">${p.clienteWhatsapp}</div></div>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-title">Entrega &amp; Pagamento</div>
+  <div class="grid2">
+    <div class="box"><div class="lbl">Data de entrega</div><div class="val">${fmtDate(p.dataEntrega)}</div></div>
+    <div class="box"><div class="lbl">Pagamento</div><div class="val" style="text-transform:capitalize">${p.formaPagamento}${p.pago ? " ✓" : ""}</div></div>
+  </div>
+</div>
+<div class="sec">
+  <div class="sec-title">Itens</div>
+  <table><thead><tr><th>Produto</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead><tbody>
+    ${p.itens.map(i => `<tr><td>${i.produtoNome}</td><td>${i.quantidade}</td><td>${fmtR(i.precoUnit)}</td><td>${fmtR(i.subtotal)}</td></tr>`).join("")}
+  </tbody></table>
+  <div style="margin-top:10px">
+    ${p.desconto > 0 ? `<div class="tr"><span>Subtotal</span><span>${fmtR(p.total)}</span></div><div class="tr"><span>Desconto</span><span>- ${fmtR(p.desconto)}</span></div>` : ""}
+    <div class="tf"><span>Total</span><span>${fmtR(p.totalFinal)}</span></div>
+  </div>
+</div>
+${p.personalizacao ? `<div class="sec"><div class="sec-title">Personalização</div><div class="note">✏️ ${p.personalizacao}</div></div>` : ""}
+${p.obs ? `<div class="sec"><div class="sec-title">Observações</div><div class="note">${p.obs}</div></div>` : ""}
+<div class="footer">Status: ${statusLabel[p.status] ?? p.status}${p.pago ? " · Pagamento confirmado ✓" : " · Pagamento pendente"}</div>
+</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
+
+const STATUS_CFG: Record<string, { label: string; cls: string }> = {
+  aguardando: { label: "Aguardando",  cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  producao:   { label: "Em Produção", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  pronto:     { label: "Pronto",      cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  entregue:   { label: "Entregue",    cls: "bg-slate-100 text-slate-500 border-slate-200" },
+  cancelado:  { label: "Cancelado",   cls: "bg-red-50 text-red-500 border-red-200" },
+};
+
+function ComandaModal({ pedido: p, contaNome, onClose, onEdit }: {
+  pedido: Pedido;
+  contaNome: string;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const fmtR = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const fmtDate = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("pt-BR");
+  const criadoEm = p.createdAt instanceof Date ? p.createdAt : new Date((p.createdAt as unknown as { seconds: number }).seconds * 1000);
+  const statusCfg = STATUS_CFG[p.status];
+  const atrasado = p.dataEntrega < new Date().toISOString().slice(0, 10) && p.status !== "entregue" && p.status !== "cancelado";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white w-full max-w-lg flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] mb-16 sm:mb-0" onClick={e => e.stopPropagation()}>
+
+        {/* Topo */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-rose-light/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-muted">#{p.numero}</span>
+            <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full border ${statusCfg.cls}`}>{statusCfg.label}</span>
+            {atrasado && <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Atrasado</span>}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => printComanda(p, contaNome)} className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-dark bg-rose-light/40 hover:bg-rose-light px-3 py-1.5 rounded-lg transition">
+              <Printer size={13} /> Imprimir / PDF
+            </button>
+            <button onClick={onEdit} className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#C4566A] hover:bg-[#b04d60] px-3 py-1.5 rounded-lg transition">
+              <Pencil size={13} /> Editar
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-muted hover:text-dark hover:bg-rose-light transition ml-1">
+              <Eye size={15} className="rotate-0" />
+            </button>
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-5">
+
+          {/* Cliente */}
+          <div>
+            <p className="text-[0.65rem] font-bold text-muted uppercase tracking-widest mb-2">Cliente</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-cream/60 rounded-xl px-3 py-2.5">
+                <p className="text-[0.6rem] text-muted mb-0.5">Nome</p>
+                <p className="text-sm font-semibold text-dark">{p.clienteNome}</p>
+              </div>
+              <div className="bg-cream/60 rounded-xl px-3 py-2.5">
+                <p className="text-[0.6rem] text-muted mb-0.5">WhatsApp</p>
+                <a href={`https://wa.me/55${p.clienteWhatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
+                  className="text-sm font-semibold text-emerald-600 hover:underline">{p.clienteWhatsapp}</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Entrega & Pagamento */}
+          <div>
+            <p className="text-[0.65rem] font-bold text-muted uppercase tracking-widest mb-2">Entrega &amp; Pagamento</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-cream/60 rounded-xl px-3 py-2.5">
+                <p className="text-[0.6rem] text-muted mb-0.5">Data entrega</p>
+                <p className={`text-sm font-semibold ${atrasado ? "text-red-600" : "text-dark"}`}>{fmtDate(p.dataEntrega)}</p>
+              </div>
+              <div className="bg-cream/60 rounded-xl px-3 py-2.5">
+                <p className="text-[0.6rem] text-muted mb-0.5">Forma</p>
+                <p className="text-sm font-semibold text-dark capitalize">{p.formaPagamento}</p>
+              </div>
+              <div className={`rounded-xl px-3 py-2.5 ${p.pago ? "bg-emerald-50" : "bg-amber-50"}`}>
+                <p className="text-[0.6rem] text-muted mb-0.5">Status pag.</p>
+                <p className={`text-sm font-semibold ${p.pago ? "text-emerald-700" : "text-amber-700"}`}>{p.pago ? "Pago ✓" : "A receber"}</p>
+              </div>
+            </div>
+            <p className="text-[0.6rem] text-muted mt-1.5 pl-1">Pedido criado em {criadoEm.toLocaleDateString("pt-BR")}</p>
+          </div>
+
+          {/* Itens */}
+          <div>
+            <p className="text-[0.65rem] font-bold text-muted uppercase tracking-widest mb-2">Itens</p>
+            <div className="border border-rose-light/60 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-[1fr_40px_80px_80px] gap-0 bg-cream/40 px-3 py-2 border-b border-rose-light/40">
+                {["Produto","Qtd","Unit.","Total"].map(h => (
+                  <p key={h} className="text-[0.6rem] font-bold text-muted uppercase tracking-wide last:text-right">{h}</p>
+                ))}
+              </div>
+              {p.itens.map((item, i) => (
+                <div key={i} className="grid grid-cols-[1fr_40px_80px_80px] gap-0 px-3 py-2.5 border-b border-rose-light/30 last:border-0">
+                  <p className="text-xs font-medium text-dark">{item.produtoNome}</p>
+                  <p className="text-xs text-muted text-center">{item.quantidade}</p>
+                  <p className="text-xs text-muted text-right">{fmtR(item.precoUnit)}</p>
+                  <p className="text-xs font-semibold text-dark text-right">{fmtR(item.subtotal)}</p>
+                </div>
+              ))}
+              {p.desconto > 0 && (
+                <div className="px-3 py-2 bg-cream/30 border-t border-rose-light/40 flex justify-between text-xs text-muted">
+                  <span>Subtotal</span><span>{fmtR(p.total)}</span>
+                </div>
+              )}
+              {p.desconto > 0 && (
+                <div className="px-3 py-2 bg-cream/30 flex justify-between text-xs text-muted">
+                  <span>Desconto</span><span className="text-emerald-600">- {fmtR(p.desconto)}</span>
+                </div>
+              )}
+              <div className="px-3 py-3 bg-rose-light/20 border-t border-rose-light/60 flex justify-between items-center">
+                <span className="text-sm font-semibold text-muted">Total</span>
+                <span className="font-heading font-bold text-xl text-[#C4566A]">{fmtR(p.totalFinal)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Personalização */}
+          {p.personalizacao && (
+            <div>
+              <p className="text-[0.65rem] font-bold text-muted uppercase tracking-widest mb-2">Personalização</p>
+              <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-3 py-2.5">
+                <p className="text-sm text-dark">✏️ {p.personalizacao}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Observações */}
+          {p.obs && (
+            <div>
+              <p className="text-[0.65rem] font-bold text-muted uppercase tracking-widest mb-2">Observações</p>
+              <div className="bg-cream/60 border border-rose-light/40 rounded-xl px-3 py-2.5">
+                <p className="text-sm text-dark">{p.obs}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
