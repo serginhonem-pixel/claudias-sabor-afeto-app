@@ -132,6 +132,16 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
 interface ItemCarrinho { produto: Produto; quantidade: number; }
 
 const CATS = ["Confeitaria", "Salgado", "Panificado", "Kit", "Outro"] as const;
+
+function toDirectImageUrl(url: string): string {
+  const matchFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (matchFile) return `https://drive.google.com/thumbnail?id=${matchFile[1]}&sz=w800`;
+  const matchOpen = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (matchOpen) return `https://drive.google.com/thumbnail?id=${matchOpen[1]}&sz=w800`;
+  const matchUc = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/);
+  if (matchUc) return `https://drive.google.com/thumbnail?id=${matchUc[1]}&sz=w800`;
+  return url;
+}
 const CAT_EMOJI: Record<string, string> = {
   Confeitaria: "🎂", Salgado: "🥐", Panificado: "🍞", Kit: "🎁", Outro: "✨",
 };
@@ -478,7 +488,7 @@ export default function PedidoClientePage() {
                         {/* Foto */}
                         {p.imagemUrl ? (
                           <div className="relative w-full h-44">
-                            <Image src={p.imagemUrl} alt={p.nome} fill className="object-cover" />
+                            <Image src={toDirectImageUrl(p.imagemUrl)} alt={p.nome} fill className="object-cover" />
                             {p.status === "encomenda" && (
                               <span className="absolute top-2 left-2 text-[0.6rem] bg-amber-500 text-white font-bold px-2 py-0.5 rounded-full">Sob encomenda</span>
                             )}
