@@ -512,7 +512,7 @@ function printComanda(p: Pedido, contaNome: string, enderecoFormatado: string) {
 <div class="header">
   <div class="logo">${contaNome}</div>
   <div class="sub">Confeitaria Artesanal</div>
-  <div class="num">Pedido #${p.numero} &nbsp;·&nbsp; ${criadoEm.toLocaleDateString("pt-BR")}</div>
+  <div class="num">Pedido #${p.numero} &nbsp;·&nbsp; ${criadoEm.toLocaleDateString("pt-BR")} às ${criadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
 </div>
 <div class="sec">
   <div class="sec-title">Cliente</div>
@@ -638,7 +638,7 @@ function ComandaModal({ pedido: p, contaNome, clientes, onClose, onEdit }: {
                 <p className={`text-sm font-semibold ${p.pago ? "text-emerald-700" : "text-amber-700"}`}>{p.pago ? "Pago ✓" : "A receber"}</p>
               </div>
             </div>
-            <p className="text-[0.6rem] text-muted mt-1.5 pl-1">Pedido criado em {criadoEm.toLocaleDateString("pt-BR")}</p>
+            <p className="text-[0.6rem] text-muted mt-1.5 pl-1">Pedido criado em {criadoEm.toLocaleDateString("pt-BR")} às {criadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
           </div>
 
           {/* Itens */}
