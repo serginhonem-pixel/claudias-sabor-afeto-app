@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { getConta, getProdutos, getProximoNumeroPedido, savePedido } from "@/lib/firestore";
+import { getConta, getProdutos, getProximoNumeroPedido, savePedido, getClienteByWhatsapp, getPedidosByWhatsapp } from "@/lib/firestore";
 import Image from "next/image";
 import { Plus, Minus, ShoppingBag, CheckCircle2, ChevronRight, X, ArrowLeft } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
-import type { Conta, Produto } from "@/types";
+import type { Conta, Produto, Cliente, Pedido } from "@/types";
 
 // ── Splash Screen ────────────────────────────────────────────────────────────
 
@@ -157,6 +157,10 @@ export default function PedidoClientePage() {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
+  const [identificacao, setIdentificacao] = useState<"entrada" | "buscando" | "encontrado" | "nao_encontrado" | "pulado">("entrada");
+  const [wppInput, setWppInput] = useState("");
+  const [clienteEncontrado, setClienteEncontrado] = useState<Cliente | null>(null);
+  const [pedidosAnteriores, setPedidosAnteriores] = useState<Pedido[]>([]);
   const [step, setStep] = useState<"menu" | "dados" | "confirmado">("menu");
   const [enviando, setEnviando] = useState(false);
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
@@ -182,6 +186,31 @@ export default function PedidoClientePage() {
       setLoading(false);
     });
   }, [contaId]);
+
+  async function buscarCliente() {
+    if (!wppInput.trim() || !contaId) return;
+    setIdentificacao("buscando");
+    const cliente = await getClienteByWhatsapp(contaId, wppInput.trim());
+    if (cliente) {
+      const pedidos = await getPedidosByWhatsapp(contaId, wppInput.trim());
+      setClienteEncontrado(cliente);
+      setPedidosAnteriores(pedidos);
+      setNome(cliente.nome);
+      setWhatsapp(cliente.whatsapp || wppInput.trim());
+      setEndereco(cliente.endereco ?? "");
+      setNumEnd(cliente.numero ?? "");
+      setComplemento(cliente.complemento ?? "");
+      setBairro(cliente.bairro ?? "");
+      setCidade(cliente.cidade ?? "");
+      setIdentificacao("encontrado");
+    } else {
+      setIdentificacao("nao_encontrado");
+    }
+  }
+
+  function pularIdentificacao() {
+    setIdentificacao("pulado");
+  }
 
   function addItem(produto: Produto) {
     setCarrinho(prev => {
@@ -310,6 +339,102 @@ export default function PedidoClientePage() {
 
   if (showSplash && conta) {
     return <SplashCardapio nomeConta={conta.nome} onEnter={() => setShowSplash(false)} />;
+  }
+
+  if (!showSplash && identificacao !== "pulado" && identificacao !== "encontrado") {
+    const buscando = identificacao === "buscando";
+    const naoEncontrado = identificacao === "nao_encontrado";
+    return (
+      <div className="min-h-screen bg-[#FDF8F4] flex flex-col items-center justify-center p-6">
+        <Toaster position="top-center" />
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt={conta?.nome} width={160} className="mx-auto mb-6" style={{ mixBlendMode: "multiply" }} />
+            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A] mb-2">Bem-vindo(a)! 👋</h2>
+            <p className="text-[#7A6860] text-sm">Informe seu WhatsApp para carregar seus dados automaticamente</p>
+          </div>
+
+          <div className="space-y-3">
+            <input
+              type="tel"
+              className="w-full border border-[#FAEDEF] rounded-2xl px-4 py-4 text-base outline-none focus:border-[#E8A0AE] bg-white transition text-center tracking-wide"
+              placeholder="(27) 99999-9999"
+              value={wppInput}
+              onChange={e => { setWppInput(e.target.value); if (naoEncontrado) setIdentificacao("entrada"); }}
+              onKeyDown={e => e.key === "Enter" && buscarCliente()}
+              disabled={buscando}
+            />
+
+            {naoEncontrado && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">
+                <p className="text-sm text-amber-700">Número não encontrado no cadastro.</p>
+                <p className="text-xs text-amber-600 mt-0.5">Continue para fazer seu pedido normalmente!</p>
+              </div>
+            )}
+
+            <button
+              onClick={naoEncontrado ? pularIdentificacao : buscarCliente}
+              disabled={buscando || (!naoEncontrado && !wppInput.trim())}
+              className="w-full bg-[#C4566A] hover:bg-[#b04d60] disabled:opacity-50 text-white font-semibold py-4 rounded-2xl transition text-sm"
+            >
+              {buscando ? "Buscando..." : naoEncontrado ? "Continuar assim mesmo" : "Continuar"}
+            </button>
+
+            <button onClick={pularIdentificacao} className="w-full text-[#7A6860] text-sm py-2 hover:text-[#2A1F1A] transition">
+              Pular
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (identificacao === "encontrado" && clienteEncontrado) {
+    const fmt2 = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return (
+      <div className="min-h-screen bg-[#FDF8F4] flex flex-col items-center justify-center p-6">
+        <Toaster position="top-center" />
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt={conta?.nome} width={140} className="mx-auto mb-5" style={{ mixBlendMode: "multiply" }} />
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🎂</div>
+            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A]">Oi, {clienteEncontrado.nome.split(" ")[0]}!</h2>
+            <p className="text-[#7A6860] text-sm mt-1">Que bom te ver por aqui 🩷</p>
+          </div>
+
+          {pedidosAnteriores.length > 0 && (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-[#7A6860] uppercase tracking-widest mb-2 text-center">Seus últimos pedidos</p>
+              <div className="space-y-2">
+                {pedidosAnteriores.map(p => (
+                  <div key={p.id} className="bg-white rounded-2xl border border-[#FAEDEF] px-4 py-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <p className="text-xs font-semibold text-[#2A1F1A]">Pedido #{p.numero}</p>
+                        <p className="text-[0.65rem] text-[#7A6860] truncate">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-bold text-[#B87444]">{fmt2(p.totalFinal)}</p>
+                        <p className="text-[0.6rem] text-[#7A6860]">{new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIdentificacao("pulado")}
+            className="w-full bg-[#C4566A] hover:bg-[#b04d60] text-white font-semibold py-4 rounded-2xl transition text-sm"
+          >
+            Ver Cardápio 🎂
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!conta) {

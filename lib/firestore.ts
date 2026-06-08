@@ -69,6 +69,27 @@ export async function deleteCliente(contaId: string, id: string) {
   await deleteDoc(docRef(contaId, "clientes", id));
 }
 
+export async function getClienteByWhatsapp(contaId: string, whatsapp: string): Promise<Cliente | null> {
+  const limpo = whatsapp.replace(/\D/g, "");
+  const snap = await getDocs(query(col(contaId, "clientes"), where("whatsapp", "==", limpo)));
+  if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data(), createdAt: fromTs(snap.docs[0].data().createdAt) } as Cliente;
+  // tenta com formatação original
+  const snap2 = await getDocs(query(col(contaId, "clientes"), where("whatsapp", "==", whatsapp)));
+  if (!snap2.empty) return { id: snap2.docs[0].id, ...snap2.docs[0].data(), createdAt: fromTs(snap2.docs[0].data().createdAt) } as Cliente;
+  return null;
+}
+
+export async function getPedidosByWhatsapp(contaId: string, whatsapp: string): Promise<Pedido[]> {
+  const limpo = whatsapp.replace(/\D/g, "");
+  const snap = await getDocs(query(col(contaId, "pedidos"), where("clienteWhatsapp", "==", limpo)));
+  const snap2 = await getDocs(query(col(contaId, "pedidos"), where("clienteWhatsapp", "==", whatsapp)));
+  const todos = [...snap.docs, ...snap2.docs].filter((d, i, arr) => arr.findIndex(x => x.id === d.id) === i);
+  return todos
+    .map(d => ({ id: d.id, ...d.data(), createdAt: fromTs(d.data().createdAt), updatedAt: fromTs(d.data().updatedAt) }) as Pedido)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 3);
+}
+
 // ─── INSUMOS ────────────────────────────────────────────────────────────────
 export async function getInsumos(contaId: string): Promise<Insumo[]> {
   const snap = await getDocs(query(col(contaId, "insumos"), orderBy("nome")));
