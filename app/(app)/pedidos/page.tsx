@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
-import { listenPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido } from "@/lib/firestore";
+import { listenPedidos, savePedido, deletePedido, getClientes, getProdutos, getProximoNumeroPedido, saveCliente } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, CheckCircle2, MessageCircle, LayoutList, Columns, Banknote, Eye, Printer } from "lucide-react";
@@ -133,6 +133,21 @@ export default function PedidosPage() {
     if (!conta) return;
     await savePedido(conta.id, { ...p, pago: !p.pago, updatedAt: new Date() }, p.id);
     toast.success(p.pago ? "Marcado como não pago" : "Pagamento confirmado! ✓");
+  }
+
+  async function handleCadastrarCliente(pedido: Pedido, enderecoFormatado: string) {
+    if (!conta) return;
+    const novoId = await saveCliente(conta.id, {
+      nome: pedido.clienteNome,
+      whatsapp: pedido.clienteWhatsapp,
+      endereco: enderecoFormatado || undefined,
+      createdAt: new Date(),
+    });
+    await savePedido(conta.id, { ...pedido, clienteId: novoId, updatedAt: new Date() }, pedido.id);
+    const novosClientes = await getClientes(conta.id);
+    setClientes(novosClientes);
+    setDetalhe(prev => prev ? { ...prev, clienteId: novoId } : prev);
+    toast.success("Cliente cadastrado e vinculado ao pedido!");
   }
 
   async function handleDelete(id: string) {
@@ -277,6 +292,7 @@ export default function PedidosPage() {
           clientes={clientes}
           onClose={() => setDetalhe(null)}
           onEdit={() => { openEdit(detalhe); setDetalhe(null); }}
+          onCadastrarCliente={handleCadastrarCliente}
         />
       )}
 
@@ -556,21 +572,29 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   cancelado:  { label: "Cancelado",   cls: "bg-red-50 text-red-500 border-red-200" },
 };
 
-function ComandaModal({ pedido: p, contaNome, clientes, onClose, onEdit }: {
+function ComandaModal({ pedido: p, contaNome, clientes, onClose, onEdit, onCadastrarCliente }: {
   pedido: Pedido;
   contaNome: string;
   clientes: Cliente[];
   onClose: () => void;
   onEdit: () => void;
+  onCadastrarCliente: (pedido: Pedido, endereco: string) => Promise<void>;
 }) {
   const fmtR = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const fmtDate = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("pt-BR");
   const criadoEm = p.createdAt instanceof Date ? p.createdAt : new Date((p.createdAt as unknown as { seconds: number }).seconds * 1000);
   const statusCfg = STATUS_CFG[p.status];
   const atrasado = p.dataEntrega < new Date().toISOString().slice(0, 10) && p.status !== "entregue" && p.status !== "cancelado";
+  const [cadastrando, setCadastrando] = useState(false);
   const clienteCad = clientes.find(c => c.id === p.clienteId);
   const enderecoFormatado = p.enderecoEntrega ||
     (clienteCad ? [clienteCad.endereco, clienteCad.numero, clienteCad.complemento, clienteCad.bairro, clienteCad.cidade].filter(Boolean).join(", ") : "");
+
+  async function handleCadastrar() {
+    setCadastrando(true);
+    try { await onCadastrarCliente(p, enderecoFormatado); }
+    finally { setCadastrando(false); }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50" onClick={onClose}>
@@ -618,6 +642,15 @@ function ComandaModal({ pedido: p, contaNome, clientes, onClose, onEdit }: {
                 <p className="text-[0.6rem] text-muted mb-0.5">Endereço de entrega</p>
                 <p className="text-sm text-dark">📍 {enderecoFormatado}</p>
               </div>
+            )}
+            {!p.clienteId && (
+              <button
+                onClick={handleCadastrar}
+                disabled={cadastrando}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-[#C4566A] border border-rose-mid/40 hover:bg-rose-light/40 disabled:opacity-60 py-2 rounded-xl transition"
+              >
+                {cadastrando ? "Cadastrando..." : "＋ Cadastrar como cliente"}
+              </button>
             )}
           </div>
 
