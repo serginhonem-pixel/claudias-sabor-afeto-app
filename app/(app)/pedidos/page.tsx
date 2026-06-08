@@ -138,12 +138,13 @@ export default function PedidosPage() {
   async function handleCadastrarCliente(pedido: Pedido, enderecoFormatado: string) {
     if (!conta) { toast.error("Conta não carregada"); return; }
     try {
-      const novoId = await saveCliente(conta.id, {
+      const dadosCliente: Parameters<typeof saveCliente>[1] = {
         nome: pedido.clienteNome,
         whatsapp: pedido.clienteWhatsapp,
-        endereco: enderecoFormatado || undefined,
         createdAt: new Date(),
-      });
+      };
+      if (enderecoFormatado) dadosCliente.endereco = enderecoFormatado;
+      const novoId = await saveCliente(conta.id, dadosCliente);
       await savePedido(conta.id, { ...pedido, clienteId: novoId, updatedAt: new Date() }, pedido.id);
       const novosClientes = await getClientes(conta.id);
       setClientes(novosClientes);
