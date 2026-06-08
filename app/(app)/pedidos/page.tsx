@@ -136,18 +136,23 @@ export default function PedidosPage() {
   }
 
   async function handleCadastrarCliente(pedido: Pedido, enderecoFormatado: string) {
-    if (!conta) return;
-    const novoId = await saveCliente(conta.id, {
-      nome: pedido.clienteNome,
-      whatsapp: pedido.clienteWhatsapp,
-      endereco: enderecoFormatado || undefined,
-      createdAt: new Date(),
-    });
-    await savePedido(conta.id, { ...pedido, clienteId: novoId, updatedAt: new Date() }, pedido.id);
-    const novosClientes = await getClientes(conta.id);
-    setClientes(novosClientes);
-    setDetalhe(prev => prev ? { ...prev, clienteId: novoId } : prev);
-    toast.success("Cliente cadastrado e vinculado ao pedido!");
+    if (!conta) { toast.error("Conta não carregada"); return; }
+    try {
+      const novoId = await saveCliente(conta.id, {
+        nome: pedido.clienteNome,
+        whatsapp: pedido.clienteWhatsapp,
+        endereco: enderecoFormatado || undefined,
+        createdAt: new Date(),
+      });
+      await savePedido(conta.id, { ...pedido, clienteId: novoId, updatedAt: new Date() }, pedido.id);
+      const novosClientes = await getClientes(conta.id);
+      setClientes(novosClientes);
+      setDetalhe(prev => prev ? { ...prev, clienteId: novoId } : prev);
+      toast.success("Cliente cadastrado e vinculado ao pedido!");
+    } catch (err) {
+      console.error("Erro ao cadastrar cliente:", err);
+      toast.error("Erro ao cadastrar cliente. Verifique o console.");
+    }
   }
 
   async function handleDelete(id: string) {
