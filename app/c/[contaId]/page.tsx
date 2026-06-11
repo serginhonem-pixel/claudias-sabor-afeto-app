@@ -3,140 +3,135 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { getConta, getProdutos, getProximoNumeroPedido, savePedido, getClienteByWhatsapp, getPedidosByWhatsapp } from "@/lib/firestore";
 import Image from "next/image";
-import { Plus, Minus, ShoppingBag, CheckCircle2, ChevronRight, X, ArrowLeft } from "lucide-react";
+import { Plus, Minus, ShoppingBag, ChevronRight, X, ArrowLeft, Check } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import type { Conta, Produto, Cliente, Pedido } from "@/types";
+
+// ── Paleta "Patisserie Noir" ─────────────────────────────────────────────────
+const C = {
+  bg: "#170D08",          // espresso profundo
+  surface: "#231710",     // card escuro
+  surface2: "#2C1D13",    // card hover / inputs
+  gold: "#D8B974",
+  goldSoft: "rgba(216,185,116,0.35)",
+  goldFaint: "rgba(216,185,116,0.14)",
+  cream: "#F6EFE1",
+  muted: "#A8917A",
+  rose: "#C4566A",
+};
+
+const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@300;400;500;600&display=swap');`;
+
+const serif = "'Cormorant Garamond', 'Georgia', serif";
+const sans = "'Poppins', sans-serif";
+
+function InstagramIcon({ size = 13, color = "#D8B974" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
+
+function GoldOrnament({ width = 52 }: { width?: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, justifyContent: "center" }}>
+      <div style={{ width, height: 1, background: `linear-gradient(to right, transparent, ${C.gold})` }} />
+      <div style={{ width: 4, height: 4, background: C.gold, transform: "rotate(45deg)" }} />
+      <div style={{ width: 6, height: 6, border: `1px solid ${C.gold}`, transform: "rotate(45deg)" }} />
+      <div style={{ width: 4, height: 4, background: C.gold, transform: "rotate(45deg)" }} />
+      <div style={{ width, height: 1, background: `linear-gradient(to left, transparent, ${C.gold})` }} />
+    </div>
+  );
+}
 
 // ── Splash Screen ────────────────────────────────────────────────────────────
 
 function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: () => void }) {
   const [step1, setStep1] = useState(false);
-  const [revealed, setRevealed] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [particles, setParticles] = useState<{ id: number; x: number; y: number }[]>([]);
 
   useEffect(() => {
-    const pts = Array.from({ length: 28 }, (_, i) => ({
-      id: i, x: Math.random() * 100, y: Math.random() * 100,
-    }));
-    setParticles(pts);
-    setTimeout(() => setStep1(true), 180);
+    setParticles(Array.from({ length: 26 }, (_, i) => ({ id: i, x: Math.random() * 100, y: Math.random() * 100 })));
+    setTimeout(() => setStep1(true), 200);
   }, []);
 
   function enter() {
-    setRevealed(true);
-    setTimeout(onEnter, 1100);
+    setLeaving(true);
+    setTimeout(onEnter, 700);
   }
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 9999,
-      background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 50%, #F5DFE8 100%)",
-      display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "center", overflow: "hidden",
-      fontFamily: "'Lora', 'Georgia', serif",
+      background: `radial-gradient(ellipse at 50% 30%, #2A1A0E 0%, ${C.bg} 65%)`,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      overflow: "hidden", fontFamily: serif,
+      opacity: leaving ? 0 : 1, transition: "opacity 0.7s ease",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Lora:ital@0;1&family=Poppins:wght@300;400;600&display=swap');
-        @keyframes particleFloat {
+        ${FONTS}
+        @keyframes pFloat {
           0% { opacity:0; transform: translate(0,0) scale(0); }
-          35% { opacity: 0.8; transform: translate(calc(var(--tx)*0.4), calc(var(--ty)*0.4)) scale(1); }
+          35% { opacity: 0.9; transform: translate(calc(var(--tx)*0.4), calc(var(--ty)*0.4)) scale(1); }
           100% { opacity:0; transform: translate(var(--tx), var(--ty)) scale(0.2); }
         }
-        @keyframes splashPulse {
-          0%, 100% { box-shadow: 0 8px 40px rgba(196,86,106,0.25), 0 0 0 0 rgba(196,86,106,0.3); }
-          50% { box-shadow: 0 8px 40px rgba(196,86,106,0.4), 0 0 0 12px rgba(196,86,106,0); }
+        @keyframes goldGlow {
+          0%,100% { box-shadow: 0 0 0 0 rgba(216,185,116,0.35); }
+          50% { box-shadow: 0 0 0 10px rgba(216,185,116,0); }
         }
-        .splash-btn:hover { transform: scale(1.03); }
-        .splash-btn { transition: transform 0.2s ease; }
       `}</style>
 
-      {/* Dark curtain that slides up on reveal */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "linear-gradient(160deg, #1A0D08 0%, #2A1F1A 55%, #3D1528 100%)",
-        transform: revealed ? "translateY(-100%)" : "translateY(0%)",
-        transition: "transform 1.1s cubic-bezier(0.76,0,0.24,1)",
-        zIndex: 0, willChange: "transform",
-      }} />
+      {particles.map((p, i) => (
+        <div key={p.id} style={{
+          position: "absolute",
+          width: i % 3 === 0 ? 4 : 2.5, height: i % 3 === 0 ? 4 : 2.5,
+          borderRadius: i % 5 === 0 ? 0 : "50%",
+          background: i % 4 === 0 ? C.cream : C.gold,
+          left: `${p.x}%`, top: `${p.y}%`, opacity: 0,
+          animation: step1 ? `pFloat ${900 + i * 70}ms ease ${150 + i * 50}ms forwards` : "none",
+          ["--tx" as string]: `${(Math.random() - 0.5) * 80}px`,
+          ["--ty" as string]: `-${Math.random() * 100 + 30}px`,
+        } as React.CSSProperties} />
+      ))}
 
-      {/* Particles */}
-      {particles.map((p, i) => {
-        const size = i % 4 === 0 ? 5 : i % 4 === 1 ? 3 : i % 4 === 2 ? 4 : 2;
-        const colors = ["#C4566A", "#D8B974", "#E8A0AE", "#F5C6CB", "#D8B974", "#C4566A"];
-        return (
-          <div key={p.id} style={{
-            position: "absolute", width: size, height: size,
-            borderRadius: i % 6 === 0 ? 1 : "50%",
-            background: colors[i % colors.length],
-            left: `${p.x}%`, top: `${p.y}%`,
-            opacity: 0, zIndex: 1,
-            animation: step1 ? `particleFloat ${850 + i * 65}ms ease ${120 + i * 45}ms forwards` : "none",
-            ["--tx" as string]: `${(Math.random() - 0.5) * 90}px`,
-            ["--ty" as string]: `-${Math.random() * 110 + 30}px`,
-          } as React.CSSProperties} />
-        );
-      })}
-
-      {/* Content */}
       <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        {/* Logo card */}
         <div style={{
           opacity: step1 ? 1 : 0,
-          transform: step1 ? "translateY(0) scale(1)" : "translateY(24px) scale(0.93)",
+          transform: step1 ? "translateY(0) scale(1)" : "translateY(22px) scale(0.94)",
           transition: "opacity 0.8s ease, transform 0.8s cubic-bezier(0.34,1.56,0.64,1)",
-          background: "#FFFAF6",
-          borderRadius: 20,
-          padding: "20px 32px",
-          boxShadow: "0 10px 50px rgba(0,0,0,0.28), 0 0 0 1px rgba(216,185,116,0.4)",
+          background: C.cream, borderRadius: 4, padding: "22px 34px",
+          boxShadow: `0 12px 60px rgba(0,0,0,0.6), 0 0 0 1px ${C.goldSoft}, 0 0 0 7px ${C.bg}, 0 0 0 8px ${C.goldFaint}`,
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt={nomeConta} width={200} style={{ display: "block" }} />
         </div>
 
-        {/* Ornament */}
-        <div style={{
-          marginTop: 26, display: "flex", alignItems: "center", gap: 8,
-          opacity: step1 ? 1 : 0,
-          transition: "opacity 0.6s ease 0.5s",
-        }}>
-          <div style={{ width: 52, height: 0.7, background: "linear-gradient(to right, transparent, #C4566A)" }} />
-          <div style={{ width: 5, height: 5, background: "#C4566A", transform: "rotate(45deg)", borderRadius: 1 }} />
-          <div style={{ width: 7, height: 7, background: "#D8B974", transform: "rotate(45deg)", borderRadius: 1 }} />
-          <div style={{ width: 5, height: 5, background: "#C4566A", transform: "rotate(45deg)", borderRadius: 1 }} />
-          <div style={{ width: 52, height: 0.7, background: "linear-gradient(to left, transparent, #C4566A)" }} />
+        <div style={{ marginTop: 30, opacity: step1 ? 1 : 0, transition: "opacity 0.6s ease 0.5s" }}>
+          <GoldOrnament />
         </div>
 
-        {/* Subtitle */}
         <div style={{
-          marginTop: 16,
-          fontFamily: "'Poppins', sans-serif", fontSize: 10, fontWeight: 400,
-          color: "#9B6B7B", letterSpacing: "0.22em", textTransform: "uppercase",
-          opacity: step1 ? 1 : 0,
-          transition: "opacity 0.5s ease 0.62s",
-          textAlign: "center",
+          marginTop: 18, fontFamily: sans, fontSize: 10, fontWeight: 300,
+          color: C.gold, letterSpacing: "0.32em", textTransform: "uppercase",
+          opacity: step1 ? 1 : 0, transition: "opacity 0.5s ease 0.65s", textAlign: "center",
         }}>
-          Confeitaria artesanal · Encomendas
+          Confeitaria Artesanal
         </div>
 
-        {/* CTA Button */}
-        <button
-          onClick={enter}
-          className="splash-btn"
-          style={{
-            marginTop: 38,
-            fontFamily: "'Poppins', sans-serif", fontSize: 10.5, fontWeight: 600,
-            letterSpacing: "0.22em", textTransform: "uppercase",
-            color: "#FFFAF6",
-            background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)",
-            border: "none",
-            padding: "14px 46px",
-            cursor: "pointer", borderRadius: 50,
-            opacity: step1 ? 1 : 0,
-            transform: step1 ? "translateY(0)" : "translateY(12px)",
-            transition: "opacity 0.5s ease 0.78s, transform 0.5s ease 0.78s",
-            animation: step1 ? "splashPulse 2.5s ease-in-out 1.5s infinite" : "none",
-          }}
-        >
+        <button onClick={enter} style={{
+          marginTop: 42, fontFamily: sans, fontSize: 10.5, fontWeight: 500,
+          letterSpacing: "0.28em", textTransform: "uppercase",
+          color: C.bg, background: `linear-gradient(135deg, ${C.gold} 0%, #C9A55C 100%)`,
+          border: "none", padding: "15px 48px", cursor: "pointer", borderRadius: 2,
+          opacity: step1 ? 1 : 0,
+          transform: step1 ? "translateY(0)" : "translateY(12px)",
+          transition: "opacity 0.5s ease 0.8s, transform 0.5s ease 0.8s",
+          animation: step1 ? "goldGlow 2.6s ease-in-out 1.6s infinite" : "none",
+        }}>
           Ver Cardápio
         </button>
       </div>
@@ -158,13 +153,33 @@ function toDirectImageUrl(url: string): string {
   return url;
 }
 
-const CAT_EMOJI: Record<string, string> = {
-  Confeitaria: "🎂", Salgado: "🥐", Panificado: "🍞", Kit: "🎁", Outro: "✨",
-};
-
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+// ── Estilos compartilhados ───────────────────────────────────────────────────
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", background: C.surface2, border: `1px solid ${C.goldFaint}`,
+  borderRadius: 8, padding: "13px 16px", fontSize: 14, color: C.cream,
+  outline: "none", fontFamily: sans, colorScheme: "dark",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block", fontSize: 10, fontWeight: 500, color: C.muted,
+  letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 7, fontFamily: sans,
+};
+
+const goldBtnStyle: React.CSSProperties = {
+  width: "100%", background: `linear-gradient(135deg, ${C.gold} 0%, #C9A55C 100%)`,
+  color: C.bg, border: "none", borderRadius: 4, padding: "16px",
+  fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase",
+  cursor: "pointer", fontFamily: sans,
+};
+
+const toasterStyle = {
+  style: { background: C.surface, color: C.cream, border: `1px solid ${C.goldFaint}` },
+};
 
 export default function PedidoClientePage() {
   const { contaId } = useParams<{ contaId: string }>();
@@ -339,10 +354,18 @@ export default function PedidoClientePage() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 50%, #F5DFE8 100%)" }}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-[#FAEDEF] border-t-[#C4566A] rounded-full animate-spin" />
-          <p className="text-[#9B6B7B] text-xs font-medium tracking-widest uppercase">Carregando</p>
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <style>{FONTS}</style>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: "50%",
+            border: `1.5px solid ${C.goldFaint}`, borderTopColor: C.gold,
+            animation: "spin 0.9s linear infinite",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ color: C.gold, fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", fontFamily: sans, fontWeight: 300 }}>
+            Carregando
+          </p>
         </div>
       </div>
     );
@@ -358,23 +381,37 @@ export default function PedidoClientePage() {
     const buscando = identificacao === "buscando";
     const naoEncontrado = identificacao === "nao_encontrado";
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 60%, #F5DFE8 100%)" }}>
-        <Toaster position="top-center" />
+      <div style={{
+        minHeight: "100vh", background: `radial-gradient(ellipse at 50% 20%, #2A1A0E 0%, ${C.bg} 70%)`,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: 24, fontFamily: sans,
+      }}>
+        <style>{FONTS}</style>
+        <Toaster position="top-center" toastOptions={toasterStyle} />
 
-        <div className="w-full max-w-sm">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt={conta?.nome} width={150} className="mx-auto mb-7" style={{ mixBlendMode: "multiply" }} />
-            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A] mb-2">Bem-vindo(a)! 🩷</h2>
-            <p className="text-[#9B6B7B] text-sm leading-relaxed">Informe seu WhatsApp para carregar<br />seus dados automaticamente</p>
+        <div style={{ width: "100%", maxWidth: 380 }}>
+          <div style={{ textAlign: "center", marginBottom: 34 }}>
+            <div style={{
+              display: "inline-block", background: C.cream, borderRadius: 4,
+              padding: "14px 24px", marginBottom: 30,
+              boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${C.goldSoft}`,
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt={conta?.nome} width={150} style={{ display: "block" }} />
+            </div>
+
+            <h2 style={{ fontFamily: serif, fontSize: 30, fontWeight: 500, color: C.cream, marginBottom: 6, fontStyle: "italic" }}>
+              Bem-vindo(a)
+            </h2>
+            <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.6, fontWeight: 300 }}>
+              Informe seu WhatsApp para carregarmos<br />seus dados automaticamente
+            </p>
           </div>
 
-          {/* Card */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/60 p-5 space-y-3" style={{ boxShadow: "0 8px 32px rgba(196,86,106,0.12), 0 1px 0 rgba(255,255,255,0.8)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input
               type="tel"
-              className="w-full border border-[#FAEDEF] rounded-2xl px-4 py-4 text-base outline-none focus:border-[#E8A0AE] bg-white/70 transition text-center tracking-wider text-[#2A1F1A] placeholder:text-[#C4B0B5]"
+              style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.08em", fontSize: 16, padding: "16px" }}
               placeholder="(27) 99999-9999"
               value={wppInput}
               onChange={e => { setWppInput(e.target.value); if (naoEncontrado) setIdentificacao("entrada"); }}
@@ -383,25 +420,34 @@ export default function PedidoClientePage() {
             />
 
             {naoEncontrado && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">
-                <p className="text-sm text-amber-700 font-medium">Número não encontrado.</p>
-                <p className="text-xs text-amber-600 mt-0.5">Continue para fazer seu pedido!</p>
+              <div style={{
+                background: "rgba(216,185,116,0.08)", border: `1px solid ${C.goldSoft}`,
+                borderRadius: 8, padding: "12px 16px", textAlign: "center",
+              }}>
+                <p style={{ fontSize: 13, color: C.gold, fontWeight: 400 }}>Número não encontrado.</p>
+                <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Continue para fazer seu pedido normalmente.</p>
               </div>
             )}
 
             <button
               onClick={naoEncontrado ? pularIdentificacao : buscarCliente}
               disabled={buscando || (!naoEncontrado && !wppInput.trim())}
-              className="w-full text-white font-semibold py-4 rounded-2xl transition text-sm disabled:opacity-50 active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 16px rgba(196,86,106,0.35)" }}
+              style={{
+                ...goldBtnStyle,
+                opacity: buscando || (!naoEncontrado && !wppInput.trim()) ? 0.45 : 1,
+              }}
             >
-              {buscando ? "Buscando..." : naoEncontrado ? "Continuar assim mesmo" : "Continuar →"}
+              {buscando ? "Buscando..." : naoEncontrado ? "Continuar assim mesmo" : "Continuar"}
+            </button>
+
+            <button onClick={pularIdentificacao} style={{
+              background: "none", border: "none", color: C.muted, fontSize: 12,
+              padding: "10px", cursor: "pointer", fontFamily: sans, fontWeight: 300,
+              letterSpacing: "0.06em",
+            }}>
+              Pular identificação
             </button>
           </div>
-
-          <button onClick={pularIdentificacao} className="w-full text-[#9B6B7B] text-sm py-3 mt-2 hover:text-[#2A1F1A] transition text-center">
-            Pular identificação
-          </button>
         </div>
       </div>
     );
@@ -409,43 +455,59 @@ export default function PedidoClientePage() {
 
   // ── Cliente encontrado ───────────────────────────────────────────────────────
   if (identificacao === "encontrado" && clienteEncontrado) {
-    const fmt2 = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 60%, #F5DFE8 100%)" }}>
-        <Toaster position="top-center" />
-        <div className="w-full max-w-sm">
-          {/* Header */}
-          <div className="text-center mb-6">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt={conta?.nome} width={130} className="mx-auto mb-6" style={{ mixBlendMode: "multiply" }} />
-            <div className="w-18 h-18 mx-auto mb-4 relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#FAEDEF] to-[#F5D5DE] rounded-full flex items-center justify-center mx-auto text-3xl shadow-md">
-                🎂
-              </div>
+      <div style={{
+        minHeight: "100vh", background: `radial-gradient(ellipse at 50% 20%, #2A1A0E 0%, ${C.bg} 70%)`,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: 24, fontFamily: sans,
+      }}>
+        <style>{FONTS}</style>
+        <Toaster position="top-center" toastOptions={toasterStyle} />
+        <div style={{ width: "100%", maxWidth: 380 }}>
+          <div style={{ textAlign: "center", marginBottom: 26 }}>
+            <div style={{
+              display: "inline-block", background: C.cream, borderRadius: 4,
+              padding: "12px 20px", marginBottom: 26,
+              boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${C.goldSoft}`,
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt={conta?.nome} width={130} style={{ display: "block" }} />
             </div>
-            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A]">
-              Oi, {clienteEncontrado.nome.split(" ")[0]}!
+
+            <GoldOrnament width={40} />
+
+            <h2 style={{ fontFamily: serif, fontSize: 32, fontWeight: 500, color: C.cream, marginTop: 18, fontStyle: "italic" }}>
+              Olá, {clienteEncontrado.nome.split(" ")[0]}
             </h2>
-            <p className="text-[#9B6B7B] text-sm mt-1">Que bom te ver por aqui 🩷</p>
+            <p style={{ color: C.muted, fontSize: 13, marginTop: 4, fontWeight: 300 }}>Que bom te ver por aqui novamente</p>
           </div>
 
-          {/* Pedidos anteriores */}
           {pedidosAnteriores.length > 0 && (
-            <div className="mb-5">
-              <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-2.5 text-center">
+            <div style={{ marginBottom: 24 }}>
+              <p style={{
+                fontSize: 9.5, fontWeight: 500, color: C.gold, textTransform: "uppercase",
+                letterSpacing: "0.25em", marginBottom: 12, textAlign: "center",
+              }}>
                 Seus últimos pedidos
               </p>
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {pedidosAnteriores.map(p => (
-                  <div key={p.id} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 px-4 py-3 shadow-sm">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-[#2A1F1A]">Pedido #{p.numero}</p>
-                        <p className="text-[0.65rem] text-[#9B6B7B] truncate mt-0.5">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
+                  <div key={p.id} style={{
+                    background: C.surface, border: `1px solid ${C.goldFaint}`,
+                    borderRadius: 10, padding: "12px 16px",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 500, color: C.cream }}>Pedido #{p.numero}</p>
+                        <p style={{ fontSize: 10.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
+                          {p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}
+                        </p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-bold text-[#B87444]">{fmt2(p.totalFinal)}</p>
-                        <p className="text-[0.6rem] text-[#9B6B7B]">{new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: C.gold }}>{fmt(p.totalFinal)}</p>
+                        <p style={{ fontSize: 9.5, color: C.muted, marginTop: 2 }}>
+                          {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -454,12 +516,8 @@ export default function PedidoClientePage() {
             </div>
           )}
 
-          <button
-            onClick={() => setIdentificacao("pulado")}
-            className="w-full text-white font-semibold py-4 rounded-2xl transition text-sm active:scale-[0.98]"
-            style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 16px rgba(196,86,106,0.35)" }}
-          >
-            Ver Cardápio 🎂
+          <button onClick={() => setIdentificacao("pulado")} style={goldBtnStyle}>
+            Ver Cardápio
           </button>
         </div>
       </div>
@@ -469,11 +527,9 @@ export default function PedidoClientePage() {
   // ── Not found ────────────────────────────────────────────────────────────────
   if (!conta) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 text-center" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #F5DFE8 100%)" }}>
-        <div>
-          <p className="text-3xl mb-3">😕</p>
-          <p className="text-[#9B6B7B]">Confeitaria não encontrada.</p>
-        </div>
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+        <style>{FONTS}</style>
+        <p style={{ color: C.muted, fontFamily: sans, fontSize: 14 }}>Confeitaria não encontrada.</p>
       </div>
     );
   }
@@ -481,18 +537,29 @@ export default function PedidoClientePage() {
   // ── Confirmado ───────────────────────────────────────────────────────────────
   if (step === "confirmado") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 60%, #F5DFE8 100%)" }}>
-        <Toaster position="top-center" />
-        <div className="text-center max-w-sm w-full">
-          <div className="w-24 h-24 mx-auto mb-6 relative">
-            <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-full flex items-center justify-center shadow-lg">
-              <CheckCircle2 size={44} className="text-emerald-500" />
-            </div>
-            <div className="absolute inset-0 rounded-full border-2 border-emerald-200 animate-ping opacity-30" />
+      <div style={{
+        minHeight: "100vh", background: `radial-gradient(ellipse at 50% 25%, #2A1A0E 0%, ${C.bg} 70%)`,
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: sans,
+      }}>
+        <style>{FONTS}</style>
+        <Toaster position="top-center" toastOptions={toasterStyle} />
+        <div style={{ textAlign: "center", maxWidth: 380, width: "100%" }}>
+          <div style={{
+            width: 84, height: 84, margin: "0 auto 26px", borderRadius: "50%",
+            border: `1.5px solid ${C.gold}`, display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: `0 0 50px rgba(216,185,116,0.25)`,
+          }}>
+            <Check size={36} color={C.gold} strokeWidth={1.5} />
           </div>
-          <h1 className="font-serif text-2xl font-bold text-[#2A1F1A] mb-2">Pedido enviado! 🎉</h1>
-          <p className="text-[#9B6B7B] text-sm mb-8 leading-relaxed">
-            Seu pedido foi registrado. O WhatsApp da <strong className="text-[#2A1F1A]">{conta.nome}</strong> foi aberto com todos os detalhes — confirme por lá para garantir sua encomenda!
+
+          <GoldOrnament width={40} />
+
+          <h1 style={{ fontFamily: serif, fontSize: 32, fontWeight: 500, color: C.cream, margin: "20px 0 10px", fontStyle: "italic" }}>
+            Pedido enviado
+          </h1>
+          <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.7, marginBottom: 36, fontWeight: 300 }}>
+            Seu pedido foi registrado. O WhatsApp da <strong style={{ color: C.cream, fontWeight: 500 }}>{conta.nome}</strong> foi
+            aberto com todos os detalhes — confirme por lá para garantir sua encomenda.
           </p>
           <button
             onClick={() => {
@@ -500,8 +567,7 @@ export default function PedidoClientePage() {
               setObs(""); setPersonalizacao(""); setDataEntrega("");
               setEndereco(""); setNumEnd(""); setComplemento(""); setBairro(""); setCidade("");
             }}
-            className="w-full text-white font-semibold py-4 rounded-2xl text-sm transition active:scale-[0.98]"
-            style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 16px rgba(196,86,106,0.35)" }}
+            style={goldBtnStyle}
           >
             Fazer outro pedido
           </button>
@@ -512,125 +578,130 @@ export default function PedidoClientePage() {
 
   // ── Dados / Formulário ───────────────────────────────────────────────────────
   if (step === "dados") {
+    const sectionTitle = (txt: string) => (
+      <p style={{
+        fontSize: 9.5, fontWeight: 500, color: C.gold, textTransform: "uppercase",
+        letterSpacing: "0.25em", marginBottom: 12,
+      }}>
+        {txt}
+      </p>
+    );
     return (
-      <div className="min-h-screen bg-[#FDF8F4]">
-        <Toaster position="top-center" />
+      <div style={{ minHeight: "100vh", background: C.bg, fontFamily: sans }}>
+        <style>{FONTS}</style>
+        <Toaster position="top-center" toastOptions={toasterStyle} />
 
         {/* Header */}
-        <div className="bg-white border-b border-[#FAEDEF] px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
-          <button onClick={() => setStep("menu")} className="w-9 h-9 bg-[#FAEDEF] hover:bg-[#F0D0D8] rounded-full flex items-center justify-center transition">
-            <ArrowLeft size={16} className="text-[#7A6860]" />
+        <div style={{
+          background: "rgba(23,13,8,0.92)", backdropFilter: "blur(12px)",
+          borderBottom: `1px solid ${C.goldFaint}`, padding: "16px 18px",
+          display: "flex", alignItems: "center", gap: 14, position: "sticky", top: 0, zIndex: 10,
+        }}>
+          <button onClick={() => setStep("menu")} style={{
+            width: 36, height: 36, borderRadius: "50%", background: "none",
+            border: `1px solid ${C.goldSoft}`, display: "flex", alignItems: "center",
+            justifyContent: "center", cursor: "pointer",
+          }}>
+            <ArrowLeft size={15} color={C.gold} />
           </button>
           <div>
-            <h2 className="font-bold text-[#2A1F1A] text-sm">Finalizar pedido</h2>
-            <p className="text-[0.65rem] text-[#9B6B7B]">{totalItens} {totalItens === 1 ? "item" : "itens"} · {fmt(total)}</p>
+            <h2 style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, color: C.cream, fontStyle: "italic" }}>Finalizar pedido</h2>
+            <p style={{ fontSize: 10.5, color: C.muted, marginTop: 1 }}>{totalItens} {totalItens === 1 ? "item" : "itens"} · {fmt(total)}</p>
           </div>
         </div>
 
-        <div className="max-w-lg mx-auto px-4 py-5 pb-32 space-y-5">
+        <div style={{ maxWidth: 520, margin: "0 auto", padding: "24px 18px 140px", display: "flex", flexDirection: "column", gap: 28 }}>
 
-          {/* Seção: Informações pessoais */}
+          {/* Suas informações */}
           <div>
-            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">👤</span>
-              Suas informações
-            </p>
-            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 space-y-3 shadow-sm">
+            {sectionTitle("Suas informações")}
+            <div style={{ background: C.surface, border: `1px solid ${C.goldFaint}`, borderRadius: 12, padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Nome *</label>
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={nome} onChange={e => setNome(e.target.value)} placeholder="Como quer ser chamado(a)?" />
+                <label style={labelStyle}>Nome *</label>
+                <input style={inputStyle} value={nome} onChange={e => setNome(e.target.value)} placeholder="Como quer ser chamado(a)?" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">WhatsApp *</label>
-                <input type="tel" className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(27) 99999-9999" />
+                <label style={labelStyle}>WhatsApp *</label>
+                <input type="tel" style={inputStyle} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(27) 99999-9999" />
               </div>
             </div>
           </div>
 
-          {/* Seção: Entrega */}
+          {/* Entrega */}
           <div>
-            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">📅</span>
-              Entrega
-            </p>
-            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 space-y-3 shadow-sm">
+            {sectionTitle("Entrega")}
+            <div style={{ background: C.surface, border: `1px solid ${C.goldFaint}`, borderRadius: 12, padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Data desejada *</label>
-                <input type="date" className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
+                <label style={labelStyle}>Data desejada *</label>
+                <input type="date" style={inputStyle} value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Personalização</label>
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={personalizacao} onChange={e => setPersonalizacao(e.target.value)} placeholder="Ex: Feliz Aniversário Maria! 🎉" />
+                <label style={labelStyle}>Personalização</label>
+                <input style={inputStyle} value={personalizacao} onChange={e => setPersonalizacao(e.target.value)} placeholder="Ex: Feliz Aniversário Maria!" />
               </div>
             </div>
           </div>
 
-          {/* Seção: Endereço */}
+          {/* Endereço */}
           <div>
-            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">📍</span>
-              Endereço de entrega <span className="normal-case font-normal text-[#C4B0B5]">(opcional)</span>
-            </p>
-            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 space-y-3 shadow-sm">
-              <div className="grid grid-cols-[1fr_80px] gap-2">
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua / Avenida" />
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={numEnd} onChange={e => setNumEnd(e.target.value)} placeholder="Nº" />
+            {sectionTitle("Endereço de entrega — opcional")}
+            <div style={{ background: C.surface, border: `1px solid ${C.goldFaint}`, borderRadius: 12, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 80px", gap: 10 }}>
+                <input style={inputStyle} value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua / Avenida" />
+                <input style={inputStyle} value={numEnd} onChange={e => setNumEnd(e.target.value)} placeholder="Nº" />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={complemento} onChange={e => setComplemento(e.target.value)} placeholder="Complemento" />
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Bairro" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <input style={inputStyle} value={complemento} onChange={e => setComplemento(e.target.value)} placeholder="Complemento" />
+                <input style={inputStyle} value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Bairro" />
               </div>
-              <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Cidade" />
+              <input style={inputStyle} value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Cidade" />
             </div>
           </div>
 
-          {/* Seção: Observações */}
+          {/* Observações */}
           <div>
-            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">📝</span>
-              Observações <span className="normal-case font-normal text-[#C4B0B5]">(opcional)</span>
-            </p>
+            {sectionTitle("Observações — opcional")}
             <textarea
-              className="w-full border border-[#FAEDEF] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition resize-none h-20 shadow-sm placeholder:text-[#C4B0B5]"
+              style={{ ...inputStyle, resize: "none", height: 80 }}
               value={obs} onChange={e => setObs(e.target.value)}
               placeholder="Alguma observação para o pedido..."
             />
           </div>
 
-          {/* Resumo do pedido */}
+          {/* Resumo */}
           <div>
-            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">🛍</span>
-              Resumo do pedido
-            </p>
-            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 shadow-sm">
-              <div className="space-y-2.5">
+            {sectionTitle("Resumo do pedido")}
+            <div style={{ background: C.surface, border: `1px solid ${C.goldSoft}`, borderRadius: 12, padding: 18 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {carrinho.map(i => (
-                  <div key={i.produto.id} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="bg-gradient-to-br from-[#FAEDEF] to-[#F5D5DE] text-[#C4566A] text-[0.6rem] font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-sm">
-                        {i.quantidade}
-                      </span>
-                      <span className="text-xs text-[#2A1F1A] font-medium truncate">{i.produto.nome}</span>
-                    </div>
-                    <span className="text-xs font-bold text-[#2A1F1A] shrink-0">{fmt(i.produto.precoVenda * i.quantidade)}</span>
+                  <div key={i.produto.id} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontSize: 12, color: C.gold, fontWeight: 600, flexShrink: 0 }}>{i.quantidade}×</span>
+                    <span style={{ fontFamily: serif, fontSize: 16, color: C.cream, flexShrink: 0 }}>{i.produto.nome}</span>
+                    <span style={{ flex: 1, borderBottom: `1px dotted ${C.goldSoft}`, margin: "0 4px", minWidth: 10 }} />
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: C.cream, flexShrink: 0 }}>{fmt(i.produto.precoVenda * i.quantidade)}</span>
                   </div>
                 ))}
               </div>
-              <div className="border-t border-[#FAEDEF] mt-4 pt-3 flex justify-between items-center">
-                <span className="font-bold text-[#2A1F1A] text-sm">Total</span>
-                <span className="font-black text-[#B87444] text-xl">{fmt(total)}</span>
+              <div style={{
+                borderTop: `1px solid ${C.goldFaint}`, marginTop: 16, paddingTop: 14,
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <span style={{ fontFamily: serif, fontSize: 19, color: C.cream, fontStyle: "italic" }}>Total</span>
+                <span style={{ fontSize: 20, fontWeight: 600, color: C.gold }}>{fmt(total)}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer CTA */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-[#FAEDEF] shadow-2xl">
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, padding: 16,
+          background: "rgba(23,13,8,0.95)", backdropFilter: "blur(12px)",
+          borderTop: `1px solid ${C.goldFaint}`,
+        }}>
           <button onClick={handleConfirmar} disabled={enviando}
-            className="w-full max-w-lg mx-auto flex items-center justify-center gap-2 text-white font-semibold py-4 rounded-2xl transition text-sm disabled:opacity-60 active:scale-[0.98]"
-            style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 20px rgba(196,86,106,0.4)", display: "flex" }}>
-            {enviando ? "Enviando..." : "✅ Confirmar e abrir WhatsApp"}
+            style={{ ...goldBtnStyle, maxWidth: 520, margin: "0 auto", display: "block", opacity: enviando ? 0.6 : 1 }}>
+            {enviando ? "Enviando..." : "Confirmar e abrir WhatsApp"}
           </button>
         </div>
       </div>
@@ -639,73 +710,108 @@ export default function PedidoClientePage() {
 
   // ── MENU ─────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#FDF8F4]">
-      <Toaster position="top-center" />
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: sans }}>
+      <style>{`
+        ${FONTS}
+        .cat-tab { transition: color 0.25s ease, border-color 0.25s ease; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .prod-img { transition: transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+        .prod-card:hover .prod-img { transform: scale(1.045); }
+      `}</style>
+      <Toaster position="top-center" toastOptions={toasterStyle} />
 
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, #FFFAF6 0%, #FDF5F0 45%, #FAE8EF 100%)" }} />
-        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full opacity-60" style={{ background: "radial-gradient(circle, #FAEDEF, transparent)" }} />
-        <div className="absolute top-4 -left-4 w-20 h-20 rounded-full opacity-25" style={{ background: "radial-gradient(circle, #E8A0AE, transparent)" }} />
-        <div className="absolute -bottom-4 right-1/3 w-24 h-24 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #C4566A, transparent)" }} />
-
-        <div className="relative px-4 pt-10 pb-8 text-center">
+      {/* Hero */}
+      <div style={{
+        position: "relative", overflow: "hidden", textAlign: "center",
+        padding: "44px 20px 36px",
+        background: `radial-gradient(ellipse at 50% 0%, #2E1C0F 0%, ${C.bg} 75%)`,
+      }}>
+        <div style={{
+          display: "inline-block", background: C.cream, borderRadius: 4,
+          padding: "16px 28px",
+          boxShadow: `0 10px 50px rgba(0,0,0,0.55), 0 0 0 1px ${C.goldSoft}`,
+        }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt={conta.nome} width={190} className="mx-auto" style={{ mixBlendMode: "multiply", display: "block" }} />
-          <div className="flex items-center justify-center gap-3 mt-5">
-            <div className="h-px flex-1 max-w-14 bg-gradient-to-r from-transparent to-[#E8A0AE]" />
-            <p className="text-[#9B6B7B] text-[0.6rem] font-medium tracking-[0.2em] uppercase">Confeitaria artesanal</p>
-            <div className="h-px flex-1 max-w-14 bg-gradient-to-l from-transparent to-[#E8A0AE]" />
-          </div>
-          {conta.instagram && (
-            <a
-              href={`https://instagram.com/${conta.instagram.replace("@", "")}`}
-              target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 mt-4 text-xs text-white font-medium px-4 py-2 rounded-full shadow-md hover:opacity-90 transition active:scale-[0.97]"
-              style={{ background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)" }}
-            >
-              📸 {conta.instagram}
-            </a>
-          )}
+          <img src="/logo.png" alt={conta.nome} width={180} style={{ display: "block" }} />
         </div>
+
+        <div style={{ marginTop: 26 }}>
+          <GoldOrnament />
+        </div>
+
+        <p style={{
+          marginTop: 16, fontSize: 9.5, fontWeight: 300, color: C.gold,
+          letterSpacing: "0.32em", textTransform: "uppercase",
+        }}>
+          Confeitaria Artesanal · Encomendas
+        </p>
+
+        {conta.instagram && (
+          <a
+            href={`https://instagram.com/${conta.instagram.replace("@", "")}`}
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7, marginTop: 20,
+              fontSize: 11.5, color: C.cream, textDecoration: "none",
+              border: `1px solid ${C.goldSoft}`, borderRadius: 2,
+              padding: "9px 20px", letterSpacing: "0.08em", fontWeight: 300,
+            }}
+          >
+            <InstagramIcon size={13} color={C.gold} />
+            {conta.instagram}
+          </a>
+        )}
       </div>
 
-      {/* Category sticky tabs */}
+      {/* Category tabs */}
       {catsComProdutos.length > 1 && (
-        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#F0E5E8] shadow-sm">
-          <div className="flex gap-2 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        <div style={{
+          position: "sticky", top: 0, zIndex: 20,
+          background: "rgba(23,13,8,0.93)", backdropFilter: "blur(14px)",
+          borderBottom: `1px solid ${C.goldFaint}`,
+        }}>
+          <div className="hide-scroll" style={{
+            display: "flex", gap: 4, padding: "0 12px", overflowX: "auto",
+            maxWidth: 560, margin: "0 auto", scrollbarWidth: "none",
+          }}>
             <button
               onClick={() => setCatAtiva("todas")}
-              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${catAtiva === "todas"
-                ? "text-white shadow-md"
-                : "bg-[#FAF0F3] text-[#9B6B7B] hover:bg-[#FAEDEF]"}`}
-              style={catAtiva === "todas" ? { background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)" } : {}}
+              className="cat-tab"
+              style={{
+                flexShrink: 0, background: "none", border: "none", cursor: "pointer",
+                padding: "16px 14px 14px", fontSize: 10.5, fontWeight: 500,
+                letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: sans,
+                color: catAtiva === "todas" ? C.gold : C.muted,
+                borderBottom: catAtiva === "todas" ? `2px solid ${C.gold}` : "2px solid transparent",
+              }}
             >
-              ✨ Todos
+              Todos
             </button>
             {catsComProdutos.map(c => (
               <button
                 key={c} onClick={() => scrollToCategoria(c)}
-                className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${catAtiva === c
-                  ? "text-white shadow-md"
-                  : "bg-[#FAF0F3] text-[#9B6B7B] hover:bg-[#FAEDEF]"}`}
-                style={catAtiva === c ? { background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)" } : {}}
+                className="cat-tab"
+                style={{
+                  flexShrink: 0, background: "none", border: "none", cursor: "pointer",
+                  padding: "16px 14px 14px", fontSize: 10.5, fontWeight: 500,
+                  letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: sans,
+                  color: catAtiva === c ? C.gold : C.muted,
+                  borderBottom: catAtiva === c ? `2px solid ${C.gold}` : "2px solid transparent",
+                }}
               >
-                {CAT_EMOJI[c]} {c}
+                {c}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Product list */}
-      <div className="max-w-lg mx-auto pb-36">
+      {/* Products */}
+      <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: 150 }}>
         {catsComProdutos.length === 0 ? (
-          <div className="text-center py-24 px-6">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FAEDEF, #FAF0E8)" }}>
-              <ShoppingBag size={30} className="text-[#E8A0AE]" />
-            </div>
-            <p className="text-[#9B6B7B] text-sm">Nenhum produto disponível no momento.</p>
+          <div style={{ textAlign: "center", padding: "100px 24px" }}>
+            <ShoppingBag size={36} color={C.goldSoft} style={{ margin: "0 auto 16px" }} />
+            <p style={{ color: C.muted, fontSize: 13.5 }}>Nenhum produto disponível no momento.</p>
           </div>
         ) : (
           (catAtiva === "todas" ? catsComProdutos : catsComProdutos.filter(c => c === catAtiva)).map(cat => {
@@ -714,98 +820,148 @@ export default function PedidoClientePage() {
             return (
               <div key={cat} ref={el => { catRefs.current[cat] = el; }}>
                 {/* Category header */}
-                <div className="px-4 pt-8 pb-4 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-base shadow-sm"
-                    style={{ background: "linear-gradient(135deg, #C4566A 0%, #E8A0AE 100%)" }}>
-                    {CAT_EMOJI[cat]}
-                  </div>
-                  <h2 className="font-bold text-[#2A1F1A] text-base tracking-tight">{cat}</h2>
-                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, #FAEDEF, transparent)" }} />
+                <div style={{ textAlign: "center", padding: "44px 20px 26px" }}>
+                  <GoldOrnament width={34} />
+                  <h2 style={{
+                    fontFamily: serif, fontSize: 30, fontWeight: 500, color: C.cream,
+                    fontStyle: "italic", marginTop: 12,
+                  }}>
+                    {cat}
+                  </h2>
                 </div>
 
-                {/* Product grid */}
-                <div className="px-4 grid grid-cols-2 gap-3">
+                {/* Product cards */}
+                <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 22 }}>
                   {prods.map(p => {
                     const q = qtd(p.id);
                     return (
-                      <div key={p.id} className="bg-white rounded-2xl overflow-hidden border border-rose-50 flex flex-col group" style={{ boxShadow: "0 2px 12px rgba(196,86,106,0.08)" }}>
-                        {/* Image / Placeholder */}
+                      <div key={p.id} className="prod-card" style={{
+                        background: C.surface, borderRadius: 14, overflow: "hidden",
+                        border: `1px solid ${q > 0 ? C.goldSoft : C.goldFaint}`,
+                        boxShadow: q > 0 ? `0 0 30px rgba(216,185,116,0.12)` : "0 8px 30px rgba(0,0,0,0.35)",
+                        transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+                      }}>
+                        {/* Image */}
                         {p.imagemUrl ? (
-                          <div className="relative w-full aspect-square overflow-hidden">
+                          <div style={{ position: "relative", width: "100%", height: 210, overflow: "hidden" }}>
                             <Image
-                              src={toDirectImageUrl(p.imagemUrl)}
-                              alt={p.nome} fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                              src={toDirectImageUrl(p.imagemUrl)} alt={p.nome} fill
+                              className="prod-img" style={{ objectFit: "cover" }}
                             />
-                            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 45%, transparent 100%)" }} />
-
+                            <div style={{
+                              position: "absolute", inset: 0,
+                              background: `linear-gradient(to top, ${C.surface} 0%, transparent 38%)`,
+                            }} />
                             {p.status === "encomenda" && (
-                              <span className="absolute top-2 left-2 text-[0.5rem] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full tracking-wide uppercase">
-                                Encomenda
+                              <span style={{
+                                position: "absolute", top: 12, left: 12,
+                                fontSize: 8.5, fontWeight: 600, letterSpacing: "0.18em",
+                                textTransform: "uppercase", color: C.bg,
+                                background: C.gold, padding: "5px 10px", borderRadius: 2,
+                              }}>
+                                Sob encomenda
                               </span>
                             )}
                             {q > 0 && (
-                              <span className="absolute top-2 right-2 w-5 h-5 text-white text-[0.6rem] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow-lg"
-                                style={{ background: "linear-gradient(135deg, #C4566A, #A8394E)" }}>
+                              <span style={{
+                                position: "absolute", top: 12, right: 12,
+                                width: 26, height: 26, borderRadius: "50%",
+                                background: C.gold, color: C.bg,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 12, fontWeight: 600,
+                                boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+                              }}>
                                 {q}
                               </span>
                             )}
-                            <div className="absolute bottom-2 left-2">
-                              <span className="bg-white/95 backdrop-blur-sm text-[#B87444] font-black text-xs px-2 py-0.5 rounded-lg shadow-sm">
-                                {fmt(p.precoVenda)}
-                              </span>
-                            </div>
                           </div>
                         ) : (
-                          <div className="relative w-full aspect-square flex flex-col items-center justify-center"
-                            style={{ background: "linear-gradient(135deg, #FAEDEF 0%, #FAF0F3 50%, #FDF8F4 100%)" }}>
-                            <span className="text-4xl opacity-40">{CAT_EMOJI[cat]}</span>
+                          <div style={{
+                            position: "relative", width: "100%", height: 120,
+                            background: `linear-gradient(135deg, ${C.surface2} 0%, ${C.surface} 100%)`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            <span style={{ fontFamily: serif, fontStyle: "italic", color: C.goldSoft, fontSize: 15 }}>
+                              {conta.nome}
+                            </span>
                             {p.status === "encomenda" && (
-                              <span className="absolute top-2 left-2 text-[0.5rem] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full tracking-wide uppercase">
-                                Encomenda
+                              <span style={{
+                                position: "absolute", top: 12, left: 12,
+                                fontSize: 8.5, fontWeight: 600, letterSpacing: "0.18em",
+                                textTransform: "uppercase", color: C.bg,
+                                background: C.gold, padding: "5px 10px", borderRadius: 2,
+                              }}>
+                                Sob encomenda
                               </span>
                             )}
-                            <div className="absolute bottom-2 left-2">
-                              <span className="bg-white/90 text-[#B87444] font-black text-xs px-2 py-0.5 rounded-lg shadow-sm">
-                                {fmt(p.precoVenda)}
-                              </span>
-                            </div>
                           </div>
                         )}
 
-                        {/* Card footer */}
-                        <div className="p-2.5 flex-1 flex flex-col">
-                          <h3 className="font-bold text-[#2A1F1A] text-[0.72rem] leading-snug line-clamp-2 flex-1 mb-0.5">
-                            {p.nome}
-                          </h3>
+                        {/* Body */}
+                        <div style={{ padding: "16px 18px 18px" }}>
+                          {/* Nome ..... preço */}
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                            <h3 style={{
+                              fontFamily: serif, fontSize: 21, fontWeight: 500,
+                              color: C.cream, lineHeight: 1.25, flexShrink: 1,
+                            }}>
+                              {p.nome}
+                            </h3>
+                            <span style={{ flex: 1, borderBottom: `1px dotted ${C.goldSoft}`, minWidth: 14, transform: "translateY(-4px)" }} />
+                            <span style={{ fontSize: 15, fontWeight: 600, color: C.gold, flexShrink: 0 }}>
+                              {fmt(p.precoVenda)}
+                            </span>
+                          </div>
+
                           {p.descricao && (
-                            <p className="text-[0.58rem] text-[#9B6B7B] line-clamp-1 mb-1.5">{p.descricao}</p>
+                            <p style={{
+                              fontFamily: serif, fontStyle: "italic", fontSize: 14.5,
+                              color: C.muted, marginTop: 6, lineHeight: 1.5,
+                            }}>
+                              {p.descricao}
+                            </p>
                           )}
-                          <div className="mt-auto">
+
+                          {/* Controls */}
+                          <div style={{ marginTop: 14 }}>
                             {q === 0 ? (
                               <button
                                 onClick={() => addItem(p)}
-                                className="w-full text-white text-[0.62rem] font-bold py-1.5 rounded-xl flex items-center justify-center gap-1 hover:opacity-90 transition active:scale-95"
-                                style={{ background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)", boxShadow: "0 2px 8px rgba(196,86,106,0.3)" }}
+                                style={{
+                                  width: "100%", background: "none",
+                                  border: `1px solid ${C.goldSoft}`, borderRadius: 3,
+                                  color: C.gold, padding: "11px", cursor: "pointer",
+                                  fontSize: 10, fontWeight: 500, letterSpacing: "0.22em",
+                                  textTransform: "uppercase", fontFamily: sans,
+                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                                  transition: "background 0.25s ease",
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = C.goldFaint)}
+                                onMouseLeave={e => (e.currentTarget.style.background = "none")}
                               >
-                                <Plus size={9} strokeWidth={3} />
+                                <Plus size={11} strokeWidth={2.5} />
                                 Adicionar
                               </button>
                             ) : (
-                              <div className="flex items-center justify-between">
-                                <button
-                                  onClick={() => removeItem(p.id)}
-                                  className="w-7 h-7 rounded-full border-2 border-[#C4566A] text-[#C4566A] flex items-center justify-center hover:bg-rose-50 transition active:scale-95"
-                                >
-                                  <Minus size={11} />
+                              <div style={{
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                border: `1px solid ${C.goldSoft}`, borderRadius: 3, padding: 4,
+                              }}>
+                                <button onClick={() => removeItem(p.id)} style={{
+                                  width: 38, height: 38, background: "none", border: "none",
+                                  color: C.gold, cursor: "pointer", display: "flex",
+                                  alignItems: "center", justifyContent: "center",
+                                }}>
+                                  <Minus size={15} />
                                 </button>
-                                <span className="font-black text-[#2A1F1A] text-sm">{q}</span>
-                                <button
-                                  onClick={() => addItem(p)}
-                                  className="w-7 h-7 rounded-full text-white flex items-center justify-center transition active:scale-95"
-                                  style={{ background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)", boxShadow: "0 2px 8px rgba(196,86,106,0.3)" }}
-                                >
-                                  <Plus size={11} />
+                                <span style={{ fontFamily: serif, fontSize: 20, fontWeight: 600, color: C.cream }}>{q}</span>
+                                <button onClick={() => addItem(p)} style={{
+                                  width: 38, height: 38,
+                                  background: `linear-gradient(135deg, ${C.gold} 0%, #C9A55C 100%)`,
+                                  border: "none", borderRadius: 2, color: C.bg, cursor: "pointer",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                  <Plus size={15} />
                                 </button>
                               </div>
                             )}
@@ -819,62 +975,110 @@ export default function PedidoClientePage() {
             );
           })
         )}
+
+        {/* Rodapé do menu */}
+        {catsComProdutos.length > 0 && (
+          <div style={{ textAlign: "center", padding: "56px 20px 0" }}>
+            <GoldOrnament width={40} />
+            <p style={{
+              marginTop: 14, fontFamily: serif, fontStyle: "italic",
+              color: C.muted, fontSize: 15,
+            }}>
+              Feito com afeto, um doce de cada vez.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Floating cart */}
       {totalItens > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-2">
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "8px 16px 22px", zIndex: 30 }}>
           {carrinhoAberto && (
-            <div className="max-w-lg mx-auto bg-white/95 backdrop-blur-xl rounded-3xl border border-rose-100 mb-3 p-4"
-              style={{ boxShadow: "0 -4px 40px rgba(196,86,106,0.15), 0 20px 40px rgba(0,0,0,0.12)" }}>
-              <div className="flex items-center justify-between mb-3.5">
-                <p className="font-bold text-[#2A1F1A] text-sm">Meu pedido</p>
-                <button onClick={() => setCarrinhoAberto(false)} className="w-7 h-7 bg-[#FAEDEF] hover:bg-[#F0D0D8] rounded-full flex items-center justify-center transition">
-                  <X size={13} className="text-[#7A6860]" />
+            <div style={{
+              maxWidth: 520, margin: "0 auto 12px",
+              background: "rgba(35,23,16,0.97)", backdropFilter: "blur(16px)",
+              border: `1px solid ${C.goldSoft}`, borderRadius: 14, padding: 18,
+              boxShadow: "0 -8px 60px rgba(0,0,0,0.6)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <p style={{ fontFamily: serif, fontStyle: "italic", fontSize: 19, color: C.cream }}>Meu pedido</p>
+                <button onClick={() => setCarrinhoAberto(false)} style={{
+                  width: 28, height: 28, borderRadius: "50%", background: "none",
+                  border: `1px solid ${C.goldFaint}`, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <X size={12} color={C.muted} />
                 </button>
               </div>
-              <div className="space-y-3 max-h-52 overflow-y-auto">
+              <div style={{ display: "flex", flexDirection: "column", gap: 13, maxHeight: 210, overflowY: "auto" }}>
                 {carrinho.map(i => (
-                  <div key={i.produto.id} className="flex items-center gap-2.5">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button onClick={() => removeItem(i.produto.id)} className="w-6 h-6 rounded-full bg-[#FAEDEF] text-[#C4566A] flex items-center justify-center hover:bg-[#F0D0D8] transition">
-                        <Minus size={9} />
+                  <div key={i.produto.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => removeItem(i.produto.id)} style={{
+                        width: 25, height: 25, borderRadius: "50%", background: "none",
+                        border: `1px solid ${C.goldSoft}`, color: C.gold, cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Minus size={10} />
                       </button>
-                      <span className="text-xs font-black text-[#2A1F1A] w-4 text-center">{i.quantidade}×</span>
-                      <button onClick={() => addItem(i.produto)} className="w-6 h-6 rounded-full text-white flex items-center justify-center transition"
-                        style={{ background: "linear-gradient(135deg, #C4566A, #D4667A)" }}>
-                        <Plus size={9} />
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: C.cream, width: 18, textAlign: "center" }}>{i.quantidade}</span>
+                      <button onClick={() => addItem(i.produto)} style={{
+                        width: 25, height: 25, borderRadius: "50%",
+                        background: C.gold, border: "none", color: C.bg, cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Plus size={10} />
                       </button>
                     </div>
-                    <span className="flex-1 text-xs text-[#2A1F1A] font-medium truncate">{i.produto.nome}</span>
-                    <span className="text-xs font-bold text-[#B87444] shrink-0">{fmt(i.produto.precoVenda * i.quantidade)}</span>
+                    <span style={{
+                      flex: 1, fontFamily: serif, fontSize: 15.5, color: C.cream,
+                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    }}>
+                      {i.produto.nome}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.gold, flexShrink: 0 }}>
+                      {fmt(i.produto.precoVenda * i.quantidade)}
+                    </span>
                   </div>
                 ))}
               </div>
-              <div className="border-t border-[#FAEDEF] mt-3.5 pt-3 flex justify-between items-center">
-                <span className="font-bold text-[#2A1F1A] text-sm">Total</span>
-                <span className="font-black text-[#B87444] text-lg">{fmt(total)}</span>
+              <div style={{
+                borderTop: `1px solid ${C.goldFaint}`, marginTop: 16, paddingTop: 12,
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <span style={{ fontFamily: serif, fontStyle: "italic", fontSize: 17, color: C.cream }}>Total</span>
+                <span style={{ fontSize: 18, fontWeight: 600, color: C.gold }}>{fmt(total)}</span>
               </div>
             </div>
           )}
 
-          <div className="max-w-lg mx-auto">
+          <div style={{ maxWidth: 520, margin: "0 auto" }}>
             <button
               onClick={() => carrinhoAberto ? setStep("dados") : setCarrinhoAberto(true)}
-              className="w-full text-white font-semibold px-5 py-4 rounded-2xl transition-all flex items-center justify-between active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, #C4566A 0%, #B04060 100%)",
-                boxShadow: "0 8px 28px rgba(196,86,106,0.45)",
+                width: "100%",
+                background: `linear-gradient(135deg, ${C.gold} 0%, #C9A55C 100%)`,
+                color: C.bg, border: "none", borderRadius: 4,
+                padding: "16px 20px", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                boxShadow: "0 10px 40px rgba(216,185,116,0.3), 0 4px 14px rgba(0,0,0,0.4)",
+                fontFamily: sans,
               }}
             >
-              <span className="bg-white/25 text-xs font-bold px-3 py-1.5 rounded-xl">
+              <span style={{
+                fontSize: 10.5, fontWeight: 600, background: "rgba(23,13,8,0.15)",
+                padding: "6px 12px", borderRadius: 3, letterSpacing: "0.05em",
+              }}>
                 {totalItens} {totalItens === 1 ? "item" : "itens"}
               </span>
-              <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <span style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase",
+              }}>
                 {carrinhoAberto ? "Finalizar pedido" : "Ver pedido"}
-                <ChevronRight size={16} />
+                <ChevronRight size={15} />
               </span>
-              <span className="text-sm font-black">{fmt(total)}</span>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>{fmt(total)}</span>
             </button>
           </div>
         </div>
