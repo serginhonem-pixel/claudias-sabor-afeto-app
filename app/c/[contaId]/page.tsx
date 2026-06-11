@@ -22,6 +22,186 @@ const C = {
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@300;400;500;600&display=swap');`;
 
+// ── Música ambiente (caixinha de música gerada via Web Audio) ────────────────
+
+const BEAT = 0.5;          // segundos por tempo
+const LOOP_BEATS = 16;
+const LOOP_DUR = BEAT * LOOP_BEATS;
+
+// [tempo, frequência, volume] — valsa suave em C → Am → F → G
+const MELODY: [number, number, number][] = [
+  // C maj
+  [0, 659.25, 0.5], [0.5, 783.99, 0.4], [1, 1046.5, 0.55], [2, 987.77, 0.45], [2.5, 783.99, 0.35], [3, 659.25, 0.4],
+  // A min
+  [4, 1046.5, 0.5], [5, 880, 0.45], [5.5, 659.25, 0.35], [6, 880, 0.4],
+  // F maj
+  [8, 698.46, 0.45], [8.5, 880, 0.4], [9, 1046.5, 0.5], [10, 1318.5, 0.55], [11, 1046.5, 0.4],
+  // G maj
+  [12, 987.77, 0.5], [12.5, 783.99, 0.35], [13, 1174.66, 0.5], [14, 987.77, 0.4], [15, 783.99, 0.35],
+];
+const BASS: [number, number, number][] = [
+  [0, 261.63, 0.35], [4, 220, 0.35], [8, 174.61, 0.35], [12, 196, 0.35],
+  [2, 392, 0.18], [6, 329.63, 0.18], [10, 440, 0.18], [14, 293.66, 0.18],
+];
+
+const music = {
+  ctx: null as AudioContext | null,
+  master: null as GainNode | null,
+  delaySend: null as GainNode | null,
+  timer: 0,
+  nextLoop: 0,
+  started: false,
+  muted: false,
+
+  start() {
+    if (this.started || typeof window === "undefined") return;
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    try {
+      const ctx = new AC();
+      const master = ctx.createGain();
+      master.gain.value = 0.13;
+      master.connect(ctx.destination);
+
+      // eco suave para som de caixinha de música
+      const delay = ctx.createDelay();
+      delay.delayTime.value = 0.42;
+      const feedback = ctx.createGain(); feedback.gain.value = 0.3;
+      const wet = ctx.createGain(); wet.gain.value = 0.38;
+      delay.connect(feedback); feedback.connect(delay);
+      delay.connect(wet); wet.connect(master);
+      const delaySend = ctx.createGain();
+      delaySend.gain.value = 1;
+      delaySend.connect(delay);
+
+      this.ctx = ctx; this.master = master; this.delaySend = delaySend;
+      this.started = true;
+      this.nextLoop = ctx.currentTime + 0.15;
+      const tick = () => this.scheduler();
+      this.timer = window.setInterval(tick, 400);
+      tick();
+    } catch { /* áudio indisponível — segue sem música */ }
+  },
+
+  scheduler() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    while (this.nextLoop < ctx.currentTime + 1.2) {
+      const t0 = this.nextLoop;
+      MELODY.forEach(([b, f, v]) => this.note(t0 + b * BEAT, f, v));
+      BASS.forEach(([b, f, v]) => this.note(t0 + b * BEAT, f, v, 2.2));
+      this.nextLoop += LOOP_DUR;
+    }
+  },
+
+  note(t: number, freq: number, vel: number, decay = 1.4) {
+    const ctx = this.ctx;
+    if (!ctx || !this.master || !this.delaySend) return;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vel, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    g.connect(this.master);
+    g.connect(this.delaySend);
+
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    osc.connect(g);
+    osc.start(t); osc.stop(t + decay + 0.1);
+
+    // brilho de sininho duas oitavas acima
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0, t);
+    g2.gain.linearRampToValueAtTime(vel * 0.18, t + 0.008);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + decay * 0.5);
+    g2.connect(this.master);
+    const osc2 = ctx.createOscillator();
+    osc2.type = "sine";
+    osc2.frequency.value = freq * 4;
+    osc2.connect(g2);
+    osc2.start(t); osc2.stop(t + decay);
+  },
+
+  toggleMute() {
+    this.muted = !this.muted;
+    if (this.master && this.ctx) {
+      this.master.gain.setTargetAtTime(this.muted ? 0 : 0.13, this.ctx.currentTime, 0.15);
+    }
+    return this.muted;
+  },
+};
+
+function SoundButton() {
+  const [muted, setMuted] = useState(music.muted);
+  if (!music.started) return null;
+  return (
+    <button
+      onClick={() => setMuted(music.toggleMute())}
+      aria-label={muted ? "Ativar música" : "Silenciar música"}
+      style={{
+        position: "fixed", right: 14, bottom: 96, zIndex: 35,
+        width: 44, height: 44, borderRadius: "50%",
+        background: "rgba(35,23,16,0.92)", backdropFilter: "blur(10px)",
+        border: `1px solid ${C.goldSoft}`, cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 2.5,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+      }}
+    >
+      <style>{`
+        @keyframes eqBar { 0%,100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+      `}</style>
+      {muted ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      ) : (
+        [0, 1, 2].map(i => (
+          <span key={i} style={{
+            width: 3, height: 14, background: C.gold, borderRadius: 2,
+            transformOrigin: "bottom",
+            animation: `eqBar ${0.9 + i * 0.25}s ease-in-out ${i * 0.15}s infinite`,
+          }} />
+        ))
+      )}
+    </button>
+  );
+}
+
+// ── Poeira dourada ambiente ──────────────────────────────────────────────────
+
+function GoldDust() {
+  const [specks, setSpecks] = useState<{ id: number; x: number; d: number; s: number; dur: number }[]>([]);
+  useEffect(() => {
+    setSpecks(Array.from({ length: 16 }, (_, i) => ({
+      id: i, x: Math.random() * 100, d: Math.random() * 14,
+      s: Math.random() * 2 + 1.5, dur: Math.random() * 10 + 12,
+    })));
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 5, overflow: "hidden" }}>
+      <style>{`
+        @keyframes dustRise {
+          0% { transform: translateY(105vh) translateX(0); opacity: 0; }
+          12% { opacity: 0.55; }
+          88% { opacity: 0.35; }
+          100% { transform: translateY(-6vh) translateX(26px); opacity: 0; }
+        }
+      `}</style>
+      {specks.map(p => (
+        <span key={p.id} style={{
+          position: "absolute", left: `${p.x}%`, bottom: 0,
+          width: p.s, height: p.s, borderRadius: "50%", background: C.gold,
+          boxShadow: `0 0 ${p.s * 2.5}px rgba(216,185,116,0.7)`,
+          animation: `dustRise ${p.dur}s linear ${p.d}s infinite`,
+          opacity: 0,
+        }} />
+      ))}
+    </div>
+  );
+}
+
 const serif = "'Cormorant Garamond', 'Georgia', serif";
 const sans = "'Poppins', sans-serif";
 
@@ -60,6 +240,7 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
   }, []);
 
   function enter() {
+    music.start(); // gesto do usuário libera o áudio
     setLeaving(true);
     setTimeout(onEnter, 700);
   }
@@ -388,6 +569,7 @@ export default function PedidoClientePage() {
       }}>
         <style>{FONTS}</style>
         <Toaster position="top-center" toastOptions={toasterStyle} />
+        <SoundButton />
 
         <div style={{ width: "100%", maxWidth: 380 }}>
           <div style={{ textAlign: "center", marginBottom: 34 }}>
@@ -463,6 +645,7 @@ export default function PedidoClientePage() {
       }}>
         <style>{FONTS}</style>
         <Toaster position="top-center" toastOptions={toasterStyle} />
+        <SoundButton />
         <div style={{ width: "100%", maxWidth: 380 }}>
           <div style={{ textAlign: "center", marginBottom: 26 }}>
             <div style={{
@@ -590,6 +773,7 @@ export default function PedidoClientePage() {
       <div style={{ minHeight: "100vh", background: C.bg, fontFamily: sans }}>
         <style>{FONTS}</style>
         <Toaster position="top-center" toastOptions={toasterStyle} />
+        <SoundButton />
 
         {/* Header */}
         <div style={{
@@ -719,6 +903,8 @@ export default function PedidoClientePage() {
         .prod-card:hover .prod-img { transform: scale(1.045); }
       `}</style>
       <Toaster position="top-center" toastOptions={toasterStyle} />
+      <GoldDust />
+      <SoundButton />
 
       {/* Hero */}
       <div style={{
