@@ -15,11 +15,11 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
   const [particles, setParticles] = useState<{ id: number; x: number; y: number }[]>([]);
 
   useEffect(() => {
-    const pts = Array.from({ length: 18 }, (_, i) => ({
+    const pts = Array.from({ length: 28 }, (_, i) => ({
       id: i, x: Math.random() * 100, y: Math.random() * 100,
     }));
     setParticles(pts);
-    setTimeout(() => setStep1(true), 300);
+    setTimeout(() => setStep1(true), 180);
   }, []);
 
   function enter() {
@@ -28,98 +28,113 @@ function SplashCardapio({ nomeConta, onEnter }: { nomeConta: string; onEnter: ()
   }
 
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 9999, background: "#F6EFE1",
-        display: "flex", flexDirection: "column", alignItems: "center",
-        justifyContent: "center", overflow: "hidden",
-        fontFamily: "'Lora', 'Georgia', serif",
-      }}
-    >
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 50%, #F5DFE8 100%)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", overflow: "hidden",
+      fontFamily: "'Lora', 'Georgia', serif",
+    }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Lora:ital@0;1&family=Poppins:wght@300;400;600&display=swap');
         @keyframes particleFloat {
-          0% { opacity:0; transform: translate(0,0); }
-          40% { opacity: 0.5; }
-          100% { opacity:0; transform: translate(var(--tx), var(--ty)); }
+          0% { opacity:0; transform: translate(0,0) scale(0); }
+          35% { opacity: 0.8; transform: translate(calc(var(--tx)*0.4), calc(var(--ty)*0.4)) scale(1); }
+          100% { opacity:0; transform: translate(var(--tx), var(--ty)) scale(0.2); }
         }
+        @keyframes splashPulse {
+          0%, 100% { box-shadow: 0 8px 40px rgba(196,86,106,0.25), 0 0 0 0 rgba(196,86,106,0.3); }
+          50% { box-shadow: 0 8px 40px rgba(196,86,106,0.4), 0 0 0 12px rgba(196,86,106,0); }
+        }
+        .splash-btn:hover { transform: scale(1.03); }
+        .splash-btn { transition: transform 0.2s ease; }
       `}</style>
 
-      {/* Fundo escuro que desliza para cima */}
+      {/* Dark curtain that slides up on reveal */}
       <div style={{
-        position: "absolute", inset: 0, background: "#2A1F1A",
+        position: "absolute", inset: 0,
+        background: "linear-gradient(160deg, #1A0D08 0%, #2A1F1A 55%, #3D1528 100%)",
         transform: revealed ? "translateY(-100%)" : "translateY(0%)",
         transition: "transform 1.1s cubic-bezier(0.76,0,0.24,1)",
-        zIndex: 0,
+        zIndex: 0, willChange: "transform",
       }} />
 
-      {/* Partículas douradas */}
-      {particles.map((p, i) => (
-        <div key={p.id} style={{
-          position: "absolute", width: 3, height: 3, borderRadius: "50%",
-          background: "#D8B974", left: `${p.x}%`, top: `${p.y}%`,
-          opacity: 0, zIndex: 1,
-          animation: step1 ? `particleFloat ${800 + i * 80}ms ease ${200 + i * 60}ms forwards` : "none",
-          ["--tx" as string]: `${(Math.random() - 0.5) * 60}px`,
-          ["--ty" as string]: `-${Math.random() * 80 + 30}px`,
-        } as React.CSSProperties} />
-      ))}
+      {/* Particles */}
+      {particles.map((p, i) => {
+        const size = i % 4 === 0 ? 5 : i % 4 === 1 ? 3 : i % 4 === 2 ? 4 : 2;
+        const colors = ["#C4566A", "#D8B974", "#E8A0AE", "#F5C6CB", "#D8B974", "#C4566A"];
+        return (
+          <div key={p.id} style={{
+            position: "absolute", width: size, height: size,
+            borderRadius: i % 6 === 0 ? 1 : "50%",
+            background: colors[i % colors.length],
+            left: `${p.x}%`, top: `${p.y}%`,
+            opacity: 0, zIndex: 1,
+            animation: step1 ? `particleFloat ${850 + i * 65}ms ease ${120 + i * 45}ms forwards` : "none",
+            ["--tx" as string]: `${(Math.random() - 0.5) * 90}px`,
+            ["--ty" as string]: `-${Math.random() * 110 + 30}px`,
+          } as React.CSSProperties} />
+        );
+      })}
 
-      {/* Conteúdo */}
-      <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-
-        {/* Logo */}
+      {/* Content */}
+      <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        {/* Logo card */}
         <div style={{
           opacity: step1 ? 1 : 0,
-          transform: step1 ? "translateY(0)" : "translateY(18px)",
-          transition: "opacity 0.7s ease, transform 0.7s ease",
-          background: "#F6EFE1",
-          borderRadius: 14,
-          padding: "14px 22px",
-          boxShadow: "0 6px 32px rgba(0,0,0,0.35)",
+          transform: step1 ? "translateY(0) scale(1)" : "translateY(24px) scale(0.93)",
+          transition: "opacity 0.8s ease, transform 0.8s cubic-bezier(0.34,1.56,0.64,1)",
+          background: "#FFFAF6",
+          borderRadius: 20,
+          padding: "20px 32px",
+          boxShadow: "0 10px 50px rgba(0,0,0,0.28), 0 0 0 1px rgba(216,185,116,0.4)",
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt={nomeConta} width={190} style={{ display: "block" }} />
+          <img src="/logo.png" alt={nomeConta} width={200} style={{ display: "block" }} />
         </div>
 
-
-        {/* Ornamento */}
+        {/* Ornament */}
         <div style={{
-          marginTop: 22, display: "flex", alignItems: "center", gap: 6,
+          marginTop: 26, display: "flex", alignItems: "center", gap: 8,
           opacity: step1 ? 1 : 0,
-          transition: "opacity 0.5s ease 0.45s",
+          transition: "opacity 0.6s ease 0.5s",
         }}>
-          <div style={{ width: 52, height: 0.6, background: "#D8B974" }} />
-          <div style={{ width: 5, height: 5, background: "#D8B974", transform: "rotate(45deg)" }} />
-          <div style={{ width: 5, height: 5, background: "#D8B974", transform: "rotate(45deg)" }} />
-          <div style={{ width: 5, height: 5, background: "#D8B974", transform: "rotate(45deg)" }} />
-          <div style={{ width: 52, height: 0.6, background: "#D8B974" }} />
+          <div style={{ width: 52, height: 0.7, background: "linear-gradient(to right, transparent, #C4566A)" }} />
+          <div style={{ width: 5, height: 5, background: "#C4566A", transform: "rotate(45deg)", borderRadius: 1 }} />
+          <div style={{ width: 7, height: 7, background: "#D8B974", transform: "rotate(45deg)", borderRadius: 1 }} />
+          <div style={{ width: 5, height: 5, background: "#C4566A", transform: "rotate(45deg)", borderRadius: 1 }} />
+          <div style={{ width: 52, height: 0.7, background: "linear-gradient(to left, transparent, #C4566A)" }} />
         </div>
 
-        {/* Subtítulo referência ao cardápio */}
+        {/* Subtitle */}
         <div style={{
-          marginTop: 18,
-          fontFamily: "'Poppins', sans-serif", fontSize: 11, fontWeight: 300,
-          color: "#D8B974", letterSpacing: "0.12em", textTransform: "uppercase",
+          marginTop: 16,
+          fontFamily: "'Poppins', sans-serif", fontSize: 10, fontWeight: 400,
+          color: "#9B6B7B", letterSpacing: "0.22em", textTransform: "uppercase",
           opacity: step1 ? 1 : 0,
-          transition: "opacity 0.5s ease 0.55s",
+          transition: "opacity 0.5s ease 0.62s",
           textAlign: "center",
         }}>
-          🎂 Confeitaria artesanal • Encomendas
+          Confeitaria artesanal · Encomendas
         </div>
 
-        {/* Botão */}
+        {/* CTA Button */}
         <button
           onClick={enter}
+          className="splash-btn"
           style={{
-            marginTop: 32,
-            fontFamily: "'Poppins', sans-serif", fontSize: 11.5, fontWeight: 600,
+            marginTop: 38,
+            fontFamily: "'Poppins', sans-serif", fontSize: 10.5, fontWeight: 600,
             letterSpacing: "0.22em", textTransform: "uppercase",
-            color: "#2A1F1A", background: "#D8B974", border: "none",
-            padding: "11px 34px", cursor: "pointer",
+            color: "#FFFAF6",
+            background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)",
+            border: "none",
+            padding: "14px 46px",
+            cursor: "pointer", borderRadius: 50,
             opacity: step1 ? 1 : 0,
-            transform: step1 ? "translateY(0)" : "translateY(8px)",
-            transition: "opacity 0.5s ease 0.65s, transform 0.5s ease 0.65s",
+            transform: step1 ? "translateY(0)" : "translateY(12px)",
+            transition: "opacity 0.5s ease 0.78s, transform 0.5s ease 0.78s",
+            animation: step1 ? "splashPulse 2.5s ease-in-out 1.5s infinite" : "none",
           }}
         >
           Ver Cardápio
@@ -142,6 +157,7 @@ function toDirectImageUrl(url: string): string {
   if (matchUc) return `https://drive.google.com/thumbnail?id=${matchUc[1]}&sz=w800`;
   return url;
 }
+
 const CAT_EMOJI: Record<string, string> = {
   Confeitaria: "🎂", Salgado: "🥐", Panificado: "🍞", Kit: "🎁", Outro: "✨",
 };
@@ -208,9 +224,7 @@ export default function PedidoClientePage() {
     }
   }
 
-  function pularIdentificacao() {
-    setIdentificacao("pulado");
-  }
+  function pularIdentificacao() { setIdentificacao("pulado"); }
 
   function addItem(produto: Produto) {
     setCarrinho(prev => {
@@ -235,7 +249,6 @@ export default function PedidoClientePage() {
 
   const total = carrinho.reduce((s, i) => s + i.produto.precoVenda * i.quantidade, 0);
   const totalItens = carrinho.reduce((s, i) => s + i.quantidade, 0);
-
   const catsComProdutos = CATS.filter(c => produtos.some(p => p.categoria === c));
 
   function scrollToCategoria(cat: string) {
@@ -278,13 +291,11 @@ export default function PedidoClientePage() {
         updatedAt: new Date(),
       });
 
-      // Notifica a dona via email
       fetch("/api/notificar-pedido", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contaId,
-          numero,
+          contaId, numero,
           clienteNome: nome.trim(),
           clienteWhatsapp: whatsapp.trim(),
           dataEntrega,
@@ -302,16 +313,12 @@ export default function PedidoClientePage() {
       const enderecoCompleto = [endereco.trim(), numEnd.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
       const itensTexto = carrinho.map(i => `• ${i.quantidade}x ${i.produto.nome} — ${fmt(i.produto.precoVenda * i.quantidade)}`).join("\n");
       const msg = [
-        `🎂 *Novo Pedido #${numero} — ${conta?.nome}*`,
-        ``,
+        `🎂 *Novo Pedido #${numero} — ${conta?.nome}*`, ``,
         `👤 *Cliente:* ${nome.trim()}`,
         `📱 *WhatsApp:* ${whatsapp.trim()}`,
         enderecoCompleto ? `📍 *Endereço:* ${enderecoCompleto}` : "",
-        `📅 *Entrega desejada:* ${new Date(dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}`,
-        ``,
-        `*Itens:*`,
-        itensTexto,
-        ``,
+        `📅 *Entrega desejada:* ${new Date(dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}`, ``,
+        `*Itens:*`, itensTexto, ``,
         `💰 *Total: ${fmt(total)}*`,
         personalizacao.trim() ? `✏️ *Personalização:* ${personalizacao.trim()}` : "",
         obs.trim() ? `📝 *Obs:* ${obs.trim()}` : "",
@@ -329,36 +336,45 @@ export default function PedidoClientePage() {
     }
   }
 
+  // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF8F4] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#FAEDEF] border-t-[#C4566A] rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 50%, #F5DFE8 100%)" }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-[#FAEDEF] border-t-[#C4566A] rounded-full animate-spin" />
+          <p className="text-[#9B6B7B] text-xs font-medium tracking-widest uppercase">Carregando</p>
+        </div>
       </div>
     );
   }
 
+  // ── Splash ──────────────────────────────────────────────────────────────────
   if (showSplash && conta) {
     return <SplashCardapio nomeConta={conta.nome} onEnter={() => setShowSplash(false)} />;
   }
 
+  // ── Identificação ────────────────────────────────────────────────────────────
   if (!showSplash && identificacao !== "pulado" && identificacao !== "encontrado") {
     const buscando = identificacao === "buscando";
     const naoEncontrado = identificacao === "nao_encontrado";
     return (
-      <div className="min-h-screen bg-[#FDF8F4] flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 60%, #F5DFE8 100%)" }}>
         <Toaster position="top-center" />
+
         <div className="w-full max-w-sm">
+          {/* Logo */}
           <div className="text-center mb-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt={conta?.nome} width={160} className="mx-auto mb-6" style={{ mixBlendMode: "multiply" }} />
-            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A] mb-2">Bem-vindo(a)! 👋</h2>
-            <p className="text-[#7A6860] text-sm">Informe seu WhatsApp para carregar seus dados automaticamente</p>
+            <img src="/logo.png" alt={conta?.nome} width={150} className="mx-auto mb-7" style={{ mixBlendMode: "multiply" }} />
+            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A] mb-2">Bem-vindo(a)! 🩷</h2>
+            <p className="text-[#9B6B7B] text-sm leading-relaxed">Informe seu WhatsApp para carregar<br />seus dados automaticamente</p>
           </div>
 
-          <div className="space-y-3">
+          {/* Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/60 p-5 space-y-3" style={{ boxShadow: "0 8px 32px rgba(196,86,106,0.12), 0 1px 0 rgba(255,255,255,0.8)" }}>
             <input
               type="tel"
-              className="w-full border border-[#FAEDEF] rounded-2xl px-4 py-4 text-base outline-none focus:border-[#E8A0AE] bg-white transition text-center tracking-wide"
+              className="w-full border border-[#FAEDEF] rounded-2xl px-4 py-4 text-base outline-none focus:border-[#E8A0AE] bg-white/70 transition text-center tracking-wider text-[#2A1F1A] placeholder:text-[#C4B0B5]"
               placeholder="(27) 99999-9999"
               value={wppInput}
               onChange={e => { setWppInput(e.target.value); if (naoEncontrado) setIdentificacao("entrada"); }}
@@ -368,56 +384,68 @@ export default function PedidoClientePage() {
 
             {naoEncontrado && (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">
-                <p className="text-sm text-amber-700">Número não encontrado no cadastro.</p>
-                <p className="text-xs text-amber-600 mt-0.5">Continue para fazer seu pedido normalmente!</p>
+                <p className="text-sm text-amber-700 font-medium">Número não encontrado.</p>
+                <p className="text-xs text-amber-600 mt-0.5">Continue para fazer seu pedido!</p>
               </div>
             )}
 
             <button
               onClick={naoEncontrado ? pularIdentificacao : buscarCliente}
               disabled={buscando || (!naoEncontrado && !wppInput.trim())}
-              className="w-full bg-[#C4566A] hover:bg-[#b04d60] disabled:opacity-50 text-white font-semibold py-4 rounded-2xl transition text-sm"
+              className="w-full text-white font-semibold py-4 rounded-2xl transition text-sm disabled:opacity-50 active:scale-[0.98]"
+              style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 16px rgba(196,86,106,0.35)" }}
             >
-              {buscando ? "Buscando..." : naoEncontrado ? "Continuar assim mesmo" : "Continuar"}
-            </button>
-
-            <button onClick={pularIdentificacao} className="w-full text-[#7A6860] text-sm py-2 hover:text-[#2A1F1A] transition">
-              Pular
+              {buscando ? "Buscando..." : naoEncontrado ? "Continuar assim mesmo" : "Continuar →"}
             </button>
           </div>
+
+          <button onClick={pularIdentificacao} className="w-full text-[#9B6B7B] text-sm py-3 mt-2 hover:text-[#2A1F1A] transition text-center">
+            Pular identificação
+          </button>
         </div>
       </div>
     );
   }
 
+  // ── Cliente encontrado ───────────────────────────────────────────────────────
   if (identificacao === "encontrado" && clienteEncontrado) {
     const fmt2 = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     return (
-      <div className="min-h-screen bg-[#FDF8F4] flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 60%, #F5DFE8 100%)" }}>
         <Toaster position="top-center" />
         <div className="w-full max-w-sm">
+          {/* Header */}
           <div className="text-center mb-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt={conta?.nome} width={140} className="mx-auto mb-5" style={{ mixBlendMode: "multiply" }} />
-            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🎂</div>
-            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A]">Oi, {clienteEncontrado.nome.split(" ")[0]}!</h2>
-            <p className="text-[#7A6860] text-sm mt-1">Que bom te ver por aqui 🩷</p>
+            <img src="/logo.png" alt={conta?.nome} width={130} className="mx-auto mb-6" style={{ mixBlendMode: "multiply" }} />
+            <div className="w-18 h-18 mx-auto mb-4 relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#FAEDEF] to-[#F5D5DE] rounded-full flex items-center justify-center mx-auto text-3xl shadow-md">
+                🎂
+              </div>
+            </div>
+            <h2 className="font-serif text-2xl font-bold text-[#2A1F1A]">
+              Oi, {clienteEncontrado.nome.split(" ")[0]}!
+            </h2>
+            <p className="text-[#9B6B7B] text-sm mt-1">Que bom te ver por aqui 🩷</p>
           </div>
 
+          {/* Pedidos anteriores */}
           {pedidosAnteriores.length > 0 && (
             <div className="mb-5">
-              <p className="text-xs font-semibold text-[#7A6860] uppercase tracking-widest mb-2 text-center">Seus últimos pedidos</p>
+              <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-2.5 text-center">
+                Seus últimos pedidos
+              </p>
               <div className="space-y-2">
                 {pedidosAnteriores.map(p => (
-                  <div key={p.id} className="bg-white rounded-2xl border border-[#FAEDEF] px-4 py-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 min-w-0 pr-2">
-                        <p className="text-xs font-semibold text-[#2A1F1A]">Pedido #{p.numero}</p>
-                        <p className="text-[0.65rem] text-[#7A6860] truncate">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
+                  <div key={p.id} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 px-4 py-3 shadow-sm">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#2A1F1A]">Pedido #{p.numero}</p>
+                        <p className="text-[0.65rem] text-[#9B6B7B] truncate mt-0.5">{p.itens.map(i => `${i.quantidade}x ${i.produtoNome}`).join(", ")}</p>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-bold text-[#B87444]">{fmt2(p.totalFinal)}</p>
-                        <p className="text-[0.6rem] text-[#7A6860]">{new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                        <p className="text-[0.6rem] text-[#9B6B7B]">{new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
                       </div>
                     </div>
                   </div>
@@ -428,7 +456,8 @@ export default function PedidoClientePage() {
 
           <button
             onClick={() => setIdentificacao("pulado")}
-            className="w-full bg-[#C4566A] hover:bg-[#b04d60] text-white font-semibold py-4 rounded-2xl transition text-sm"
+            className="w-full text-white font-semibold py-4 rounded-2xl transition text-sm active:scale-[0.98]"
+            style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 16px rgba(196,86,106,0.35)" }}
           >
             Ver Cardápio 🎂
           </button>
@@ -437,29 +466,42 @@ export default function PedidoClientePage() {
     );
   }
 
+  // ── Not found ────────────────────────────────────────────────────────────────
   if (!conta) {
     return (
-      <div className="min-h-screen bg-[#FDF8F4] flex items-center justify-center p-6 text-center">
-        <div><p className="text-2xl mb-2">😕</p><p className="text-[#7A6860]">Confeitaria não encontrada.</p></div>
+      <div className="min-h-screen flex items-center justify-center p-6 text-center" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #F5DFE8 100%)" }}>
+        <div>
+          <p className="text-3xl mb-3">😕</p>
+          <p className="text-[#9B6B7B]">Confeitaria não encontrada.</p>
+        </div>
       </div>
     );
   }
 
+  // ── Confirmado ───────────────────────────────────────────────────────────────
   if (step === "confirmado") {
     return (
-      <div className="min-h-screen bg-[#FDF8F4] flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(160deg, #FDF5EC 0%, #FAE8E0 60%, #F5DFE8 100%)" }}>
         <Toaster position="top-center" />
-        <div className="text-center max-w-sm">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 size={40} className="text-emerald-500" />
+        <div className="text-center max-w-sm w-full">
+          <div className="w-24 h-24 mx-auto mb-6 relative">
+            <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-full flex items-center justify-center shadow-lg">
+              <CheckCircle2 size={44} className="text-emerald-500" />
+            </div>
+            <div className="absolute inset-0 rounded-full border-2 border-emerald-200 animate-ping opacity-30" />
           </div>
           <h1 className="font-serif text-2xl font-bold text-[#2A1F1A] mb-2">Pedido enviado! 🎉</h1>
-          <p className="text-[#7A6860] text-sm mb-6">
-            Seu pedido foi registrado com sucesso. O WhatsApp da <strong>{conta.nome}</strong> foi aberto com todos os detalhes — confirme por lá para garantir sua encomenda!
+          <p className="text-[#9B6B7B] text-sm mb-8 leading-relaxed">
+            Seu pedido foi registrado. O WhatsApp da <strong className="text-[#2A1F1A]">{conta.nome}</strong> foi aberto com todos os detalhes — confirme por lá para garantir sua encomenda!
           </p>
           <button
-            onClick={() => { setStep("menu"); setCarrinho([]); setNome(""); setWhatsapp(""); setObs(""); setPersonalizacao(""); setDataEntrega(""); setEndereco(""); setNumEnd(""); setComplemento(""); setBairro(""); setCidade(""); }}
-            className="w-full bg-[#C4566A] hover:bg-[#b04d60] text-white font-semibold py-3 rounded-2xl text-sm transition"
+            onClick={() => {
+              setStep("menu"); setCarrinho([]); setNome(""); setWhatsapp("");
+              setObs(""); setPersonalizacao(""); setDataEntrega("");
+              setEndereco(""); setNumEnd(""); setComplemento(""); setBairro(""); setCidade("");
+            }}
+            className="w-full text-white font-semibold py-4 rounded-2xl text-sm transition active:scale-[0.98]"
+            style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 16px rgba(196,86,106,0.35)" }}
           >
             Fazer outro pedido
           </button>
@@ -468,80 +510,126 @@ export default function PedidoClientePage() {
     );
   }
 
+  // ── Dados / Formulário ───────────────────────────────────────────────────────
   if (step === "dados") {
     return (
       <div className="min-h-screen bg-[#FDF8F4]">
         <Toaster position="top-center" />
-        <div className="bg-white border-b border-[#FAEDEF] px-4 py-4 flex items-center gap-3">
-          <button onClick={() => setStep("menu")} className="p-2 hover:bg-[#FAEDEF] rounded-full transition">
-            <ArrowLeft size={18} className="text-[#7A6860]" />
+
+        {/* Header */}
+        <div className="bg-white border-b border-[#FAEDEF] px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
+          <button onClick={() => setStep("menu")} className="w-9 h-9 bg-[#FAEDEF] hover:bg-[#F0D0D8] rounded-full flex items-center justify-center transition">
+            <ArrowLeft size={16} className="text-[#7A6860]" />
           </button>
-          <h2 className="font-semibold text-[#2A1F1A] text-sm">Seus dados</h2>
+          <div>
+            <h2 className="font-bold text-[#2A1F1A] text-sm">Finalizar pedido</h2>
+            <p className="text-[0.65rem] text-[#9B6B7B]">{totalItens} {totalItens === 1 ? "item" : "itens"} · {fmt(total)}</p>
+          </div>
         </div>
 
-        <div className="max-w-lg mx-auto px-4 py-5 pb-32 space-y-4">
+        <div className="max-w-lg mx-auto px-4 py-5 pb-32 space-y-5">
+
+          {/* Seção: Informações pessoais */}
           <div>
-            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Seu nome *</label>
-            <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={nome} onChange={e => setNome(e.target.value)} placeholder="Como quer ser chamado(a)?" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">WhatsApp *</label>
-            <input type="tel" className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(27) 99999-9999" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Data de entrega desejada *</label>
-            <input type="date" className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Personalização (opcional)</label>
-            <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={personalizacao} onChange={e => setPersonalizacao(e.target.value)} placeholder="Ex: Feliz Aniversário Maria! 🎉" />
+            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">👤</span>
+              Suas informações
+            </p>
+            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 space-y-3 shadow-sm">
+              <div>
+                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Nome *</label>
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={nome} onChange={e => setNome(e.target.value)} placeholder="Como quer ser chamado(a)?" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">WhatsApp *</label>
+                <input type="tel" className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(27) 99999-9999" />
+              </div>
+            </div>
           </div>
 
-          {/* Endereço de entrega */}
+          {/* Seção: Entrega */}
           <div>
-            <p className="text-xs font-semibold text-[#7A6860] mb-2">📍 Endereço de entrega (opcional)</p>
-            <div className="space-y-2">
+            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">📅</span>
+              Entrega
+            </p>
+            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 space-y-3 shadow-sm">
+              <div>
+                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Data desejada *</label>
+                <input type="date" className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Personalização</label>
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={personalizacao} onChange={e => setPersonalizacao(e.target.value)} placeholder="Ex: Feliz Aniversário Maria! 🎉" />
+              </div>
+            </div>
+          </div>
+
+          {/* Seção: Endereço */}
+          <div>
+            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">📍</span>
+              Endereço de entrega <span className="normal-case font-normal text-[#C4B0B5]">(opcional)</span>
+            </p>
+            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 space-y-3 shadow-sm">
               <div className="grid grid-cols-[1fr_80px] gap-2">
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua / Avenida" />
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={numEnd} onChange={e => setNumEnd(e.target.value)} placeholder="Nº" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={endereco} onChange={e => setEndereco(e.target.value)} placeholder="Rua / Avenida" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={numEnd} onChange={e => setNumEnd(e.target.value)} placeholder="Nº" />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={complemento} onChange={e => setComplemento(e.target.value)} placeholder="Complemento" />
-                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Bairro" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={complemento} onChange={e => setComplemento(e.target.value)} placeholder="Complemento" />
+                <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Bairro" />
               </div>
-              <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition" value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Cidade" />
+              <input className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-[#FFFAF8] transition placeholder:text-[#C4B0B5]" value={cidade} onChange={e => setCidade(e.target.value)} placeholder="Cidade" />
             </div>
           </div>
 
+          {/* Seção: Observações */}
           <div>
-            <label className="block text-xs font-semibold text-[#7A6860] mb-1.5">Observações (opcional)</label>
-            <textarea className="w-full border border-[#FAEDEF] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition resize-none h-16" value={obs} onChange={e => setObs(e.target.value)} placeholder="Alguma observação para o pedido..." />
+            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">📝</span>
+              Observações <span className="normal-case font-normal text-[#C4B0B5]">(opcional)</span>
+            </p>
+            <textarea
+              className="w-full border border-[#FAEDEF] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[#E8A0AE] bg-white transition resize-none h-20 shadow-sm placeholder:text-[#C4B0B5]"
+              value={obs} onChange={e => setObs(e.target.value)}
+              placeholder="Alguma observação para o pedido..."
+            />
           </div>
 
-          {/* Resumo */}
-          <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4">
-            <p className="font-semibold text-[#2A1F1A] text-sm mb-3">Resumo do pedido</p>
-            <div className="space-y-2">
-              {carrinho.map(i => (
-                <div key={i.produto.id} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#FAEDEF] text-[#C4566A] text-[0.6rem] font-bold w-5 h-5 rounded-full flex items-center justify-center">{i.quantidade}</span>
-                    <span className="text-[#2A1F1A]">{i.produto.nome}</span>
+          {/* Resumo do pedido */}
+          <div>
+            <p className="text-[0.65rem] font-bold text-[#9B6B7B] uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-5 h-5 bg-gradient-to-br from-[#C4566A] to-[#E8A0AE] rounded-lg flex items-center justify-center text-white text-[0.55rem]">🛍</span>
+              Resumo do pedido
+            </p>
+            <div className="bg-white rounded-2xl border border-[#FAEDEF] p-4 shadow-sm">
+              <div className="space-y-2.5">
+                {carrinho.map(i => (
+                  <div key={i.produto.id} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="bg-gradient-to-br from-[#FAEDEF] to-[#F5D5DE] text-[#C4566A] text-[0.6rem] font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-sm">
+                        {i.quantidade}
+                      </span>
+                      <span className="text-xs text-[#2A1F1A] font-medium truncate">{i.produto.nome}</span>
+                    </div>
+                    <span className="text-xs font-bold text-[#2A1F1A] shrink-0">{fmt(i.produto.precoVenda * i.quantidade)}</span>
                   </div>
-                  <span className="font-semibold text-[#2A1F1A]">{fmt(i.produto.precoVenda * i.quantidade)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-[#FAEDEF] mt-3 pt-3 flex justify-between font-bold text-[#2A1F1A]">
-              <span>Total</span>
-              <span className="text-[#B87444] text-lg">{fmt(total)}</span>
+                ))}
+              </div>
+              <div className="border-t border-[#FAEDEF] mt-4 pt-3 flex justify-between items-center">
+                <span className="font-bold text-[#2A1F1A] text-sm">Total</span>
+                <span className="font-black text-[#B87444] text-xl">{fmt(total)}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#FAEDEF] shadow-lg">
+        {/* Footer CTA */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-[#FAEDEF] shadow-2xl">
           <button onClick={handleConfirmar} disabled={enviando}
-            className="w-full max-w-lg mx-auto flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] disabled:opacity-60 text-white font-semibold py-4 rounded-2xl transition text-sm">
+            className="w-full max-w-lg mx-auto flex items-center justify-center gap-2 text-white font-semibold py-4 rounded-2xl transition text-sm disabled:opacity-60 active:scale-[0.98]"
+            style={{ background: "linear-gradient(135deg, #C4566A 0%, #A8394E 100%)", boxShadow: "0 4px 20px rgba(196,86,106,0.4)", display: "flex" }}>
             {enviando ? "Enviando..." : "✅ Confirmar e abrir WhatsApp"}
           </button>
         </div>
@@ -549,50 +637,75 @@ export default function PedidoClientePage() {
     );
   }
 
-  // ── MENU ───────────────────────────────────────────────────────────────────
+  // ── MENU ─────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FDF8F4]">
       <Toaster position="top-center" />
 
-      {/* Header */}
-      <div className="bg-[#FDF8F4] px-4 pt-8 pb-5 text-center border-b border-[#FAEDEF]">
-        <div className="flex justify-center mb-3">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, #FFFAF6 0%, #FDF5F0 45%, #FAE8EF 100%)" }} />
+        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full opacity-60" style={{ background: "radial-gradient(circle, #FAEDEF, transparent)" }} />
+        <div className="absolute top-4 -left-4 w-20 h-20 rounded-full opacity-25" style={{ background: "radial-gradient(circle, #E8A0AE, transparent)" }} />
+        <div className="absolute -bottom-4 right-1/3 w-24 h-24 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #C4566A, transparent)" }} />
+
+        <div className="relative px-4 pt-10 pb-8 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt={conta.nome} width={200} style={{ mixBlendMode: "multiply", display: "block" }} />
+          <img src="/logo.png" alt={conta.nome} width={190} className="mx-auto" style={{ mixBlendMode: "multiply", display: "block" }} />
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <div className="h-px flex-1 max-w-14 bg-gradient-to-r from-transparent to-[#E8A0AE]" />
+            <p className="text-[#9B6B7B] text-[0.6rem] font-medium tracking-[0.2em] uppercase">Confeitaria artesanal</p>
+            <div className="h-px flex-1 max-w-14 bg-gradient-to-l from-transparent to-[#E8A0AE]" />
+          </div>
+          {conta.instagram && (
+            <a
+              href={`https://instagram.com/${conta.instagram.replace("@", "")}`}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-4 text-xs text-white font-medium px-4 py-2 rounded-full shadow-md hover:opacity-90 transition active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)" }}
+            >
+              📸 {conta.instagram}
+            </a>
+          )}
         </div>
-        <p className="text-[#7A6860] text-xs">Faça seu pedido direto com a gente 🎂</p>
-        {conta.instagram && (
-          <a href={`https://instagram.com/${conta.instagram.replace("@","")}`} target="_blank" rel="noopener noreferrer"
-            className="inline-block mt-1.5 text-[0.65rem] text-[#C4566A] font-semibold">
-            {conta.instagram}
-          </a>
-        )}
       </div>
 
-      {/* Categorias sticky */}
+      {/* Category sticky tabs */}
       {catsComProdutos.length > 1 && (
-        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-[#FAEDEF] px-4 py-2.5 flex gap-2 overflow-x-auto">
-          <button
-            onClick={() => setCatAtiva("todas")}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition ${catAtiva === "todas" ? "bg-[#C4566A] text-white" : "bg-[#FAEDEF] text-[#7A6860]"}`}
-          >
-            Todos
-          </button>
-          {catsComProdutos.map(c => (
-            <button key={c} onClick={() => scrollToCategoria(c)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition ${catAtiva === c ? "bg-[#C4566A] text-white" : "bg-[#FAEDEF] text-[#7A6860]"}`}>
-              {CAT_EMOJI[c]} {c}
+        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#F0E5E8] shadow-sm">
+          <div className="flex gap-2 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            <button
+              onClick={() => setCatAtiva("todas")}
+              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${catAtiva === "todas"
+                ? "text-white shadow-md"
+                : "bg-[#FAF0F3] text-[#9B6B7B] hover:bg-[#FAEDEF]"}`}
+              style={catAtiva === "todas" ? { background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)" } : {}}
+            >
+              ✨ Todos
             </button>
-          ))}
+            {catsComProdutos.map(c => (
+              <button
+                key={c} onClick={() => scrollToCategoria(c)}
+                className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${catAtiva === c
+                  ? "text-white shadow-md"
+                  : "bg-[#FAF0F3] text-[#9B6B7B] hover:bg-[#FAEDEF]"}`}
+                style={catAtiva === c ? { background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)" } : {}}
+              >
+                {CAT_EMOJI[c]} {c}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Produtos */}
+      {/* Product list */}
       <div className="max-w-lg mx-auto pb-36">
         {catsComProdutos.length === 0 ? (
-          <div className="text-center py-20 text-[#7A6860]">
-            <ShoppingBag size={40} className="mx-auto mb-3 opacity-20" />
-            <p className="text-sm">Nenhum produto disponível no momento.</p>
+          <div className="text-center py-24 px-6">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FAEDEF, #FAF0E8)" }}>
+              <ShoppingBag size={30} className="text-[#E8A0AE]" />
+            </div>
+            <p className="text-[#9B6B7B] text-sm">Nenhum produto disponível no momento.</p>
           </div>
         ) : (
           (catAtiva === "todas" ? catsComProdutos : catsComProdutos.filter(c => c === catAtiva)).map(cat => {
@@ -600,57 +713,102 @@ export default function PedidoClientePage() {
             if (!prods.length) return null;
             return (
               <div key={cat} ref={el => { catRefs.current[cat] = el; }}>
-                {/* Cabeçalho da categoria */}
-                <div className="px-4 pt-6 pb-3 flex items-center gap-2">
-                  <span className="text-xl">{CAT_EMOJI[cat]}</span>
-                  <h2 className="font-serif font-bold text-[#2A1F1A] text-lg">{cat}</h2>
-                  <div className="flex-1 h-px bg-[#FAEDEF] ml-1" />
+                {/* Category header */}
+                <div className="px-4 pt-8 pb-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-base shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #C4566A 0%, #E8A0AE 100%)" }}>
+                    {CAT_EMOJI[cat]}
+                  </div>
+                  <h2 className="font-bold text-[#2A1F1A] text-base tracking-tight">{cat}</h2>
+                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, #FAEDEF, transparent)" }} />
                 </div>
 
-                <div className="px-4 space-y-3">
+                {/* Product grid */}
+                <div className="px-4 grid grid-cols-2 gap-3">
                   {prods.map(p => {
                     const q = qtd(p.id);
                     return (
-                      <div key={p.id} className="bg-white rounded-2xl overflow-hidden border border-[#FAEDEF] shadow-sm">
-                        {/* Foto */}
+                      <div key={p.id} className="bg-white rounded-2xl overflow-hidden border border-rose-50 flex flex-col group" style={{ boxShadow: "0 2px 12px rgba(196,86,106,0.08)" }}>
+                        {/* Image / Placeholder */}
                         {p.imagemUrl ? (
-                          <div className="relative w-full h-44">
-                            <Image src={toDirectImageUrl(p.imagemUrl)} alt={p.nome} fill className="object-cover" />
+                          <div className="relative w-full aspect-square overflow-hidden">
+                            <Image
+                              src={toDirectImageUrl(p.imagemUrl)}
+                              alt={p.nome} fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                            />
+                            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 45%, transparent 100%)" }} />
+
                             {p.status === "encomenda" && (
-                              <span className="absolute top-2 left-2 text-[0.6rem] bg-amber-500 text-white font-bold px-2 py-0.5 rounded-full">Sob encomenda</span>
+                              <span className="absolute top-2 left-2 text-[0.5rem] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full tracking-wide uppercase">
+                                Encomenda
+                              </span>
                             )}
+                            {q > 0 && (
+                              <span className="absolute top-2 right-2 w-5 h-5 text-white text-[0.6rem] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow-lg"
+                                style={{ background: "linear-gradient(135deg, #C4566A, #A8394E)" }}>
+                                {q}
+                              </span>
+                            )}
+                            <div className="absolute bottom-2 left-2">
+                              <span className="bg-white/95 backdrop-blur-sm text-[#B87444] font-black text-xs px-2 py-0.5 rounded-lg shadow-sm">
+                                {fmt(p.precoVenda)}
+                              </span>
+                            </div>
                           </div>
                         ) : (
-                          <div className="w-full h-36 bg-gradient-to-br from-[#FAEDEF] to-[#FDF8F4] flex items-center justify-center">
-                            <span className="text-5xl opacity-40">{CAT_EMOJI[cat]}</span>
+                          <div className="relative w-full aspect-square flex flex-col items-center justify-center"
+                            style={{ background: "linear-gradient(135deg, #FAEDEF 0%, #FAF0F3 50%, #FDF8F4 100%)" }}>
+                            <span className="text-4xl opacity-40">{CAT_EMOJI[cat]}</span>
+                            {p.status === "encomenda" && (
+                              <span className="absolute top-2 left-2 text-[0.5rem] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full tracking-wide uppercase">
+                                Encomenda
+                              </span>
+                            )}
+                            <div className="absolute bottom-2 left-2">
+                              <span className="bg-white/90 text-[#B87444] font-black text-xs px-2 py-0.5 rounded-lg shadow-sm">
+                                {fmt(p.precoVenda)}
+                              </span>
+                            </div>
                           </div>
                         )}
 
-                        {/* Info */}
-                        <div className="p-4">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-serif font-bold text-[#2A1F1A] text-base leading-snug">{p.nome}</h3>
-                              {p.descricao && <p className="text-xs text-[#7A6860] mt-1 leading-relaxed">{p.descricao}</p>}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-3">
-                            <p className="font-bold text-[#B87444] text-lg">{fmt(p.precoVenda)}</p>
-                            <div className="flex items-center gap-2">
-                              {q > 0 && (
-                                <>
-                                  <button onClick={() => removeItem(p.id)}
-                                    className="w-9 h-9 rounded-full border-2 border-[#C4566A] text-[#C4566A] flex items-center justify-center hover:bg-[#FAEDEF] transition font-bold">
-                                    <Minus size={15} />
-                                  </button>
-                                  <span className="w-6 text-center font-bold text-[#2A1F1A]">{q}</span>
-                                </>
-                              )}
-                              <button onClick={() => addItem(p)}
-                                className="w-9 h-9 rounded-full bg-[#C4566A] text-white flex items-center justify-center hover:bg-[#b04d60] transition shadow-sm">
-                                <Plus size={15} />
+                        {/* Card footer */}
+                        <div className="p-2.5 flex-1 flex flex-col">
+                          <h3 className="font-bold text-[#2A1F1A] text-[0.72rem] leading-snug line-clamp-2 flex-1 mb-0.5">
+                            {p.nome}
+                          </h3>
+                          {p.descricao && (
+                            <p className="text-[0.58rem] text-[#9B6B7B] line-clamp-1 mb-1.5">{p.descricao}</p>
+                          )}
+                          <div className="mt-auto">
+                            {q === 0 ? (
+                              <button
+                                onClick={() => addItem(p)}
+                                className="w-full text-white text-[0.62rem] font-bold py-1.5 rounded-xl flex items-center justify-center gap-1 hover:opacity-90 transition active:scale-95"
+                                style={{ background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)", boxShadow: "0 2px 8px rgba(196,86,106,0.3)" }}
+                              >
+                                <Plus size={9} strokeWidth={3} />
+                                Adicionar
                               </button>
-                            </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <button
+                                  onClick={() => removeItem(p.id)}
+                                  className="w-7 h-7 rounded-full border-2 border-[#C4566A] text-[#C4566A] flex items-center justify-center hover:bg-rose-50 transition active:scale-95"
+                                >
+                                  <Minus size={11} />
+                                </button>
+                                <span className="font-black text-[#2A1F1A] text-sm">{q}</span>
+                                <button
+                                  onClick={() => addItem(p)}
+                                  className="w-7 h-7 rounded-full text-white flex items-center justify-center transition active:scale-95"
+                                  style={{ background: "linear-gradient(135deg, #C4566A 0%, #D4667A 100%)", boxShadow: "0 2px 8px rgba(196,86,106,0.3)" }}
+                                >
+                                  <Plus size={11} />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -663,38 +821,39 @@ export default function PedidoClientePage() {
         )}
       </div>
 
-      {/* Carrinho flutuante */}
+      {/* Floating cart */}
       {totalItens > 0 && (
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-2">
           {carrinhoAberto && (
-            <div className="max-w-lg mx-auto bg-white rounded-2xl border border-[#FAEDEF] shadow-xl mb-3 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-semibold text-[#2A1F1A] text-sm">Meu pedido</p>
-                <button onClick={() => setCarrinhoAberto(false)} className="p-1 hover:bg-[#FAEDEF] rounded-full transition">
-                  <X size={16} className="text-[#7A6860]" />
+            <div className="max-w-lg mx-auto bg-white/95 backdrop-blur-xl rounded-3xl border border-rose-100 mb-3 p-4"
+              style={{ boxShadow: "0 -4px 40px rgba(196,86,106,0.15), 0 20px 40px rgba(0,0,0,0.12)" }}>
+              <div className="flex items-center justify-between mb-3.5">
+                <p className="font-bold text-[#2A1F1A] text-sm">Meu pedido</p>
+                <button onClick={() => setCarrinhoAberto(false)} className="w-7 h-7 bg-[#FAEDEF] hover:bg-[#F0D0D8] rounded-full flex items-center justify-center transition">
+                  <X size={13} className="text-[#7A6860]" />
                 </button>
               </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-3 max-h-52 overflow-y-auto">
                 {carrinho.map(i => (
-                  <div key={i.produto.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => removeItem(i.produto.id)} className="w-6 h-6 rounded-full bg-[#FAEDEF] text-[#C4566A] flex items-center justify-center text-xs font-bold hover:bg-[#E8A0AE] transition">
-                        <Minus size={10} />
+                  <div key={i.produto.id} className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button onClick={() => removeItem(i.produto.id)} className="w-6 h-6 rounded-full bg-[#FAEDEF] text-[#C4566A] flex items-center justify-center hover:bg-[#F0D0D8] transition">
+                        <Minus size={9} />
                       </button>
-                      <span className="text-xs text-[#2A1F1A] font-medium">{i.quantidade}x {i.produto.nome}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-[#2A1F1A]">{fmt(i.produto.precoVenda * i.quantidade)}</span>
-                      <button onClick={() => addItem(i.produto)} className="w-6 h-6 rounded-full bg-[#C4566A] text-white flex items-center justify-center hover:bg-[#b04d60] transition">
-                        <Plus size={10} />
+                      <span className="text-xs font-black text-[#2A1F1A] w-4 text-center">{i.quantidade}×</span>
+                      <button onClick={() => addItem(i.produto)} className="w-6 h-6 rounded-full text-white flex items-center justify-center transition"
+                        style={{ background: "linear-gradient(135deg, #C4566A, #D4667A)" }}>
+                        <Plus size={9} />
                       </button>
                     </div>
+                    <span className="flex-1 text-xs text-[#2A1F1A] font-medium truncate">{i.produto.nome}</span>
+                    <span className="text-xs font-bold text-[#B87444] shrink-0">{fmt(i.produto.precoVenda * i.quantidade)}</span>
                   </div>
                 ))}
               </div>
-              <div className="border-t border-[#FAEDEF] mt-3 pt-2 flex justify-between text-sm font-bold text-[#2A1F1A]">
-                <span>Total</span>
-                <span className="text-[#B87444]">{fmt(total)}</span>
+              <div className="border-t border-[#FAEDEF] mt-3.5 pt-3 flex justify-between items-center">
+                <span className="font-bold text-[#2A1F1A] text-sm">Total</span>
+                <span className="font-black text-[#B87444] text-lg">{fmt(total)}</span>
               </div>
             </div>
           )}
@@ -702,16 +861,20 @@ export default function PedidoClientePage() {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => carrinhoAberto ? setStep("dados") : setCarrinhoAberto(true)}
-              className="w-full bg-[#C4566A] hover:bg-[#b04d60] text-white font-semibold px-5 py-4 rounded-2xl shadow-xl transition flex items-center justify-between"
+              className="w-full text-white font-semibold px-5 py-4 rounded-2xl transition-all flex items-center justify-between active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, #C4566A 0%, #B04060 100%)",
+                boxShadow: "0 8px 28px rgba(196,86,106,0.45)",
+              }}
             >
-              <span className="bg-white/20 text-xs font-bold px-2.5 py-1 rounded-full">
+              <span className="bg-white/25 text-xs font-bold px-3 py-1.5 rounded-xl">
                 {totalItens} {totalItens === 1 ? "item" : "itens"}
               </span>
-              <span className="flex items-center gap-1.5 text-sm">
+              <span className="flex items-center gap-1.5 text-sm font-semibold">
                 {carrinhoAberto ? "Finalizar pedido" : "Ver pedido"}
                 <ChevronRight size={16} />
               </span>
-              <span className="text-sm font-bold">{fmt(total)}</span>
+              <span className="text-sm font-black">{fmt(total)}</span>
             </button>
           </div>
         </div>
