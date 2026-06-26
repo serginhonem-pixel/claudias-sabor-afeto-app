@@ -25,7 +25,6 @@ const EMPTY: Omit<Produto,"id"|"contaId"> = {
   nome:"", categoria:"Confeitaria", unidadeVenda:"Unidade", precoVenda:0,
   custoProduto:0, cmvPercent:0, descricao:"", prazoProduzDias:1, status:"ativo", createdAt: new Date(),
   promocoes: [],
-  promoGrupo: "",
   tipo: "",
 };
 
@@ -58,7 +57,7 @@ export default function ProdutosPage() {
 
   function openEdit(p: Produto) {
     setEditando(p);
-    setForm({ ...p, promocoes: p.promocoes ?? [], promoGrupo: p.promoGrupo ?? "" });
+    setForm({ ...p, promocoes: p.promocoes ?? [] });
     // migrar formato antigo (receitaId único) para array
     if (p.receitasVinculadas?.length) {
       setReceitasVinculadas(p.receitasVinculadas);
@@ -126,7 +125,6 @@ export default function ProdutosPage() {
         receitaId: receitasVinculadas[0]?.receitaId,
         receitaNome: receitasVinculadas[0]?.receitaNome,
         promocoes,
-        promoGrupo: form.promoGrupo?.trim() ?? "",
       }, editando?.id);
       toast.success(editando ? "Produto atualizado!" : "Produto criado!");
       setModal(false); load();

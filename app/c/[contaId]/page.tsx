@@ -453,7 +453,7 @@ export default function PedidoClientePage() {
   }
 
   function getGrupoPromocao(produto: Produto) {
-    const tipo = produto.promoGrupo || produto.tipo || "";
+    const tipo = produto.tipo || "";
     if (!tipo) return null;
     return promocoes.find(pr => pr.tipo === tipo && pr.ativo) ?? null;
   }
@@ -468,7 +468,7 @@ export default function PedidoClientePage() {
 
   function getTotalGroupQuantity(tipo: string) {
     return carrinho.reduce((sum, item) => {
-      const itemTipo = item.produto.promoGrupo || item.produto.tipo || "";
+      const itemTipo = item.produto.tipo || "";
       return sum + (itemTipo === tipo ? item.quantidade : 0);
     }, 0);
   }
@@ -1180,34 +1180,101 @@ export default function PedidoClientePage() {
                             </p>
                           )}
                           {(() => {
-                            const grupo = getProdutoPromocoes(p);
-                            type PromoDisplay = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
-                            if (!grupo || grupo.length === 0) return null;
+                            const promos = getProdutoPromocoes(p);
+                            type PromoCalc = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
+                            if (!promos || promos.length === 0) return null;
+                            const grupoPromo = getGrupoPromocao(p);
+                            const isGroup = !!grupoPromo;
+                            const cartTotal = grupoPromo ? getTotalGroupQuantity(grupoPromo.tipo) : 0;
+                            const threshold = grupoPromo?.quantidade ?? 0;
+                            const isTriggered = isGroup && cartTotal >= threshold;
+                            const faltam = isGroup ? Math.max(0, threshold - cartTotal) : 0;
+                            const progress = threshold > 0 ? Math.min(1, cartTotal / threshold) : 0;
                             return (
-                              <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 10, background: "rgba(216,185,116,0.14)", border: `1px solid ${C.goldSoft}` }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.gold }}>
-                                    Promoção ativa
-                                  </span>
-                                </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                                  {grupo.map(pr => {
-                                    const precoDisplay = (pr as PromoDisplay).precoBundle ?? ((pr as PromoDisplay).precoPorUnidade ?? 0) * pr.quantidade;
-                                    return (
-                                      <span key={`${pr.quantidade}-${precoDisplay}`} style={{
-                                        fontSize: 11, fontWeight: 700, color: C.bg,
-                                        background: C.gold, borderRadius: 999, padding: "5px 10px",
-                                      }}>
-                                        {pr.quantidade} por {fmt(precoDisplay)}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                                {p.promoGrupo && (
-                                  <p style={{ fontSize: 10, color: C.muted, marginTop: 7 }}>
-                                    Grupo: {p.promoGrupo}
-                                  </p>
-                                )}
+                              <div style={{
+                                marginTop: 10, borderRadius: 10, overflow: "hidden",
+                                background: isTriggered ? "rgba(74,196,130,0.10)" : "rgba(216,185,116,0.10)",
+                                border: `1px solid ${isTriggered ? "rgba(74,196,130,0.35)" : C.goldSoft}`,
+                              }}>
+                                {promos.map(pr => {
+                                  const precoUnit = (pr as PromoCalc).precoPorUnidade
+                                    ?? (((pr as PromoCalc).precoBundle ?? 0) / pr.quantidade);
+                                  const precoBundle = (pr as PromoCalc).precoBundle
+                                    ?? (((pr as PromoCalc).precoPorUnidade ?? 0) * pr.quantidade);
+                                  const economia = p.precoVenda * pr.quantidade - precoBundle;
+                                  return (
+                                    <div key={`${pr.quantidade}-${precoBundle}`} style={{ padding: "10px 12px" }}>
+                                      {isTriggered ? (
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                          <div style={{
+                                            width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                                            background: "rgba(74,196,130,0.2)",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                          }}>
+                                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                                              <path d="M2 6l3 3 5-5" stroke="#4ac482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                          </div>
+                                          <div>
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "#4ac482", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                              Promoção ativa!
+                                            </div>
+                                            <div style={{ fontSize: 12.5, color: C.cream, marginTop: 1 }}>
+                                              {fmt(precoUnit)}/un
+                                              {economia > 0 && (
+                                                <span style={{ marginLeft: 6, fontSize: 10.5, color: "#4ac482" }}>
+                                                  economize {fmt(economia)}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div>
+                                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                                            <div>
+                                              <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 2 }}>
+                                                {isGroup ? "Promoção em grupo" : "Promoção"}
+                                              </div>
+                                              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.cream }}>
+                                                Leve {pr.quantidade} por {fmt(precoBundle)}
+                                              </div>
+                                              {economia > 0 && (
+                                                <div style={{ fontSize: 10.5, color: "#4ac482", marginTop: 2 }}>
+                                                  economize {fmt(economia)}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div style={{
+                                              flexShrink: 0, background: C.goldFaint,
+                                              border: `1px solid ${C.goldSoft}`, borderRadius: 6,
+                                              padding: "4px 9px", textAlign: "center",
+                                            }}>
+                                              <div style={{ fontSize: 14, fontWeight: 700, color: C.gold }}>{fmt(precoUnit)}</div>
+                                              <div style={{ fontSize: 8.5, color: C.muted, letterSpacing: "0.06em" }}>/ unid.</div>
+                                            </div>
+                                          </div>
+                                          {isGroup && (
+                                            <div style={{ marginTop: 8 }}>
+                                              <div style={{ height: 3, background: "rgba(216,185,116,0.18)", borderRadius: 999 }}>
+                                                <div style={{
+                                                  height: 3, background: C.gold, borderRadius: 999,
+                                                  width: `${progress * 100}%`,
+                                                  transition: "width 0.35s ease",
+                                                }} />
+                                              </div>
+                                              <div style={{ fontSize: 9.5, color: C.muted, marginTop: 4 }}>
+                                                {cartTotal > 0
+                                                  ? `${cartTotal} de ${threshold} no carrinho — faltam ${faltam}`
+                                                  : `Adicione ${threshold} unidades do grupo para ativar`}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             );
                           })()}

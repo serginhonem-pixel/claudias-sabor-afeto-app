@@ -108,7 +108,6 @@ export interface Produto {
   receitaNome?: string;
   receitasVinculadas?: ReceitaVinculada[];
   promocoes?: PromocaoProduto[];
-  promoGrupo?: string;
   custoProduto: number;
   cmvPercent: number;
   descricao?: string;
