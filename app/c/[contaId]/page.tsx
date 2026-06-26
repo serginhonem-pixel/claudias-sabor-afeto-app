@@ -1221,9 +1221,9 @@ export default function PedidoClientePage() {
                                             </div>
                                             <div style={{ fontSize: 12.5, color: C.cream, marginTop: 1 }}>
                                               {fmt(precoUnit)}/un
-                                              {economia > 0 && (
+                                              {p.precoVenda - precoUnit > 0.005 && (
                                                 <span style={{ marginLeft: 6, fontSize: 10.5, color: "#4ac482" }}>
-                                                  economize {fmt(economia)}
+                                                  −{fmt(p.precoVenda - precoUnit)}/un
                                                 </span>
                                               )}
                                             </div>
