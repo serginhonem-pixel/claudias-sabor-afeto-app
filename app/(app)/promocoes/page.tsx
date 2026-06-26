@@ -98,19 +98,19 @@ export default function PromocoesPage() {
               <input type="number" min="0" step="0.01" className="field-input" value={form.precoPorUnidade} onChange={e => setForm(f=>({...f,precoPorUnidade:Number(e.target.value)}))} />
             </div>
           </div>
-+          {form.tipo && (
-+            <div className="bg-slate-50 border border-slate-200 rounded p-3">
-+              <div className="font-semibold mb-2">Produtos no grupo {form.tipo}</div>
-+              <div className="space-y-1 max-h-40 overflow-y-auto">
-+                {produtos.filter(prod => prod.tipo === form.tipo).map(prod => (
-+                  <div key={prod.id} className="text-sm text-slate-700">• {prod.nome}</div>
-+                ))}
-+                {produtos.filter(prod => prod.tipo === form.tipo).length === 0 && (
-+                  <div className="text-sm text-slate-500">Nenhum produto encontrado para este grupo.</div>
-+                )}
-+              </div>
-+            </div>
-+          )}
+          {form.tipo && (
+            <div className="bg-slate-50 border border-slate-200 rounded p-3">
+              <div className="font-semibold mb-2">Produtos no grupo {form.tipo}</div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {produtos.filter(prod => prod.tipo === form.tipo).map(prod => (
+                  <div key={prod.id} className="text-sm text-slate-700">• {prod.nome}</div>
+                ))}
+                {produtos.filter(prod => prod.tipo === form.tipo).length === 0 && (
+                  <div className="text-sm text-slate-500">Nenhum produto encontrado para este grupo.</div>
+                )}
+              </div>
+            </div>
+          )}
           <div>
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.ativo} onChange={e => setForm(f=>({...f,ativo:e.target.checked}))} /> Ativa</label>
           </div>
