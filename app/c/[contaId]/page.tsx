@@ -473,35 +473,33 @@ export default function PedidoClientePage() {
     }, 0);
   }
 
-  function getGroupPromoUnitPrice(produto: Produto) {
-    const grupo = getGrupoPromocao(produto);
-    if (!grupo) return null;
-    const totalQty = getTotalGroupQuantity(grupo.tipo);
-    return totalQty >= grupo.quantidade ? grupo.precoPorUnidade : null;
-  }
-
   function getPromocaoTotal(produto: Produto, quantidade: number) {
-    const promocoes = getProdutoPromocoes(produto);
-    if (!promocoes?.length) return null;
+    const promos = produto.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0);
+    if (!promos?.length) return null;
     const dp = Array(quantidade + 1).fill(Number.POSITIVE_INFINITY);
     dp[0] = 0;
     for (let i = 1; i <= quantidade; i++) {
       dp[i] = dp[i - 1] + produto.precoVenda;
-      type PromoCalc = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
-      for (const promo of promocoes as PromoCalc[]) {
+      for (const promo of promos) {
         const q = Math.max(1, Math.round(promo.quantidade));
-        const priceForQ = promo.precoBundle ?? ((promo.precoPorUnidade ?? 0) * q);
-        if (q <= i) {
-          dp[i] = Math.min(dp[i], dp[i - q] + priceForQ);
-        }
+        if (q <= i) dp[i] = Math.min(dp[i], dp[i - q] + promo.preco);
       }
     }
     return Number(dp[quantidade].toFixed(2));
   }
 
   function getProdutoSubtotal(produto: Produto, quantidade: number) {
-    const promoUnitPrice = getGroupPromoUnitPrice(produto);
-    if (promoUnitPrice !== null) return promoUnitPrice * quantidade;
+    const grupo = getGrupoPromocao(produto);
+    if (grupo) {
+      const totalGroupQty = getTotalGroupQuantity(grupo.tipo);
+      const threshold = grupo.quantidade;
+      const promoSets = Math.floor(totalGroupQty / threshold);
+      const promoTotalQty = promoSets * threshold;
+      const productPromoQty = totalGroupQty > 0
+        ? Math.min(quantidade, Math.round(promoTotalQty * quantidade / totalGroupQty))
+        : 0;
+      return Number((productPromoQty * grupo.precoPorUnidade + (quantidade - productPromoQty) * produto.precoVenda).toFixed(2));
+    }
     const valor = getPromocaoTotal(produto, quantidade);
     return valor !== null ? valor : produto.precoVenda * quantidade;
   }
@@ -1180,101 +1178,90 @@ export default function PedidoClientePage() {
                             </p>
                           )}
                           {(() => {
-                            const promos = getProdutoPromocoes(p);
-                            type PromoCalc = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
-                            if (!promos || promos.length === 0) return null;
                             const grupoPromo = getGrupoPromocao(p);
-                            const isGroup = !!grupoPromo;
-                            const cartTotal = grupoPromo ? getTotalGroupQuantity(grupoPromo.tipo) : 0;
-                            const threshold = grupoPromo?.quantidade ?? 0;
-                            const isTriggered = isGroup && cartTotal >= threshold;
-                            const faltam = isGroup ? Math.max(0, threshold - cartTotal) : 0;
-                            const progress = threshold > 0 ? Math.min(1, cartTotal / threshold) : 0;
-                            return (
-                              <div style={{
-                                marginTop: 10, borderRadius: 10, overflow: "hidden",
-                                background: isTriggered ? "rgba(74,196,130,0.10)" : "rgba(216,185,116,0.10)",
-                                border: `1px solid ${isTriggered ? "rgba(74,196,130,0.35)" : C.goldSoft}`,
-                              }}>
-                                {promos.map(pr => {
-                                  const precoUnit = (pr as PromoCalc).precoPorUnidade
-                                    ?? (((pr as PromoCalc).precoBundle ?? 0) / pr.quantidade);
-                                  const precoBundle = (pr as PromoCalc).precoBundle
-                                    ?? (((pr as PromoCalc).precoPorUnidade ?? 0) * pr.quantidade);
-                                  const economia = p.precoVenda * pr.quantidade - precoBundle;
-                                  return (
-                                    <div key={`${pr.quantidade}-${precoBundle}`} style={{ padding: "10px 12px" }}>
-                                      {isTriggered ? (
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                          <div style={{
-                                            width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                                            background: "rgba(74,196,130,0.2)",
-                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                          }}>
-                                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                                              <path d="M2 6l3 3 5-5" stroke="#4ac482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                                            </svg>
-                                          </div>
-                                          <div>
-                                            <div style={{ fontSize: 10, fontWeight: 700, color: "#4ac482", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                                              Promoção ativa!
-                                            </div>
-                                            <div style={{ fontSize: 12.5, color: C.cream, marginTop: 1 }}>
-                                              {fmt(precoUnit)}/un
-                                              {p.precoVenda - precoUnit > 0.005 && (
-                                                <span style={{ marginLeft: 6, fontSize: 10.5, color: "#4ac482" }}>
-                                                  −{fmt(p.precoVenda - precoUnit)}/un
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
+                            const indivPromos = p.promocoes?.filter(pr => pr.quantidade > 0 && pr.preco > 0);
+                            if (!grupoPromo && !indivPromos?.length) return null;
+
+                            if (grupoPromo) {
+                              const cartTotal = getTotalGroupQuantity(grupoPromo.tipo);
+                              const threshold = grupoPromo.quantidade;
+                              const loteAtivo = Math.floor(cartTotal / threshold);
+                              const progressNoLote = cartTotal % threshold;
+                              const faltamProximo = threshold - progressNoLote;
+                              const progressPct = threshold > 0 ? (progressNoLote / threshold) * 100 : 0;
+                              const isActive = loteAtivo > 0;
+                              const precoUnit = grupoPromo.precoPorUnidade;
+                              const economia = p.precoVenda - precoUnit;
+                              return (
+                                <div style={{
+                                  marginTop: 10, borderRadius: 10, overflow: "hidden",
+                                  background: isActive ? "rgba(74,196,130,0.10)" : "rgba(216,185,116,0.10)",
+                                  border: `1px solid ${isActive ? "rgba(74,196,130,0.35)" : C.goldSoft}`,
+                                }}>
+                                  <div style={{ padding: "10px 12px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                                      <div>
+                                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: isActive ? "#4ac482" : C.gold }}>
+                                          {isActive ? `${loteAtivo} lote${loteAtivo > 1 ? "s" : ""} ativo${loteAtivo > 1 ? "s" : ""}` : "Promoção em grupo"}
                                         </div>
-                                      ) : (
-                                        <div>
-                                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                                            <div>
-                                              <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 2 }}>
-                                                {isGroup ? "Promoção em grupo" : "Promoção"}
-                                              </div>
-                                              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.cream }}>
-                                                Leve {pr.quantidade} por {fmt(precoBundle)}
-                                              </div>
-                                              {economia > 0 && (
-                                                <div style={{ fontSize: 10.5, color: "#4ac482", marginTop: 2 }}>
-                                                  economize {fmt(economia)}
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div style={{
-                                              flexShrink: 0, background: C.goldFaint,
-                                              border: `1px solid ${C.goldSoft}`, borderRadius: 6,
-                                              padding: "4px 9px", textAlign: "center",
-                                            }}>
-                                              <div style={{ fontSize: 14, fontWeight: 700, color: C.gold }}>{fmt(precoUnit)}</div>
-                                              <div style={{ fontSize: 8.5, color: C.muted, letterSpacing: "0.06em" }}>/ unid.</div>
-                                            </div>
-                                          </div>
-                                          {isGroup && (
-                                            <div style={{ marginTop: 8 }}>
-                                              <div style={{ height: 3, background: "rgba(216,185,116,0.18)", borderRadius: 999 }}>
-                                                <div style={{
-                                                  height: 3, background: C.gold, borderRadius: 999,
-                                                  width: `${progress * 100}%`,
-                                                  transition: "width 0.35s ease",
-                                                }} />
-                                              </div>
-                                              <div style={{ fontSize: 9.5, color: C.muted, marginTop: 4 }}>
-                                                {cartTotal > 0
-                                                  ? `${cartTotal} de ${threshold} no carrinho — faltam ${faltam}`
-                                                  : `Adicione ${threshold} unidades do grupo para ativar`}
-                                              </div>
-                                            </div>
-                                          )}
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: C.cream, marginTop: 2 }}>
+                                          A cada {threshold} → {fmt(precoUnit)}/un
                                         </div>
-                                      )}
+                                        {economia > 0.005 && (
+                                          <div style={{ fontSize: 10.5, color: "#4ac482", marginTop: 2 }}>
+                                            −{fmt(economia)}/un no lote
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div style={{
+                                        flexShrink: 0,
+                                        background: isActive ? "rgba(74,196,130,0.15)" : C.goldFaint,
+                                        border: `1px solid ${isActive ? "rgba(74,196,130,0.35)" : C.goldSoft}`,
+                                        borderRadius: 6, padding: "4px 9px", textAlign: "center",
+                                      }}>
+                                        <div style={{ fontSize: 14, fontWeight: 700, color: isActive ? "#4ac482" : C.gold }}>{fmt(precoUnit)}</div>
+                                        <div style={{ fontSize: 8.5, color: C.muted, letterSpacing: "0.06em" }}>/ unid.</div>
+                                      </div>
                                     </div>
-                                  );
-                                })}
+                                    <div style={{ marginTop: 8 }}>
+                                      <div style={{ height: 3, background: "rgba(216,185,116,0.18)", borderRadius: 999 }}>
+                                        <div style={{
+                                          height: 3, borderRadius: 999,
+                                          background: isActive ? "#4ac482" : C.gold,
+                                          width: `${progressPct}%`,
+                                          transition: "width 0.35s ease",
+                                        }} />
+                                      </div>
+                                      <div style={{ fontSize: 9.5, color: C.muted, marginTop: 4 }}>
+                                        {cartTotal === 0
+                                          ? `Adicione ${threshold} unidades do grupo para ativar`
+                                          : progressNoLote === 0
+                                          ? `Faltam ${threshold} para mais um lote com desconto`
+                                          : `${progressNoLote} de ${threshold} para o próximo lote`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // promoções individuais do produto
+                            return (
+                              <div style={{ marginTop: 10, borderRadius: 10, overflow: "hidden", background: "rgba(216,185,116,0.10)", border: `1px solid ${C.goldSoft}` }}>
+                                <div style={{ padding: "10px 12px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                  <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, letterSpacing: "0.12em", textTransform: "uppercase", width: "100%", marginBottom: 4 }}>Promoção</div>
+                                  {indivPromos!.map(pr => {
+                                    const economia = p.precoVenda * pr.quantidade - pr.preco;
+                                    return (
+                                      <div key={`${pr.quantidade}-${pr.preco}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: C.bg, background: C.gold, borderRadius: 999, padding: "4px 10px" }}>
+                                          {pr.quantidade} por {fmt(pr.preco)}
+                                        </span>
+                                        {economia > 0.005 && <span style={{ fontSize: 10.5, color: "#4ac482" }}>economize {fmt(economia)}</span>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             );
                           })()}
