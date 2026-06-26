@@ -15,5 +15,23 @@ service cloud.firestore {
     match /contas/{contaId}/{document=**} {
       allow read, write: if request.auth != null;
     }
+
+    // Cardápio público: apenas leitura pontual (get), nunca listagem geral
+    match /contas/{contaId} {
+      allow get: if true;
+    }
+    match /contas/{contaId}/produtos/{doc} {
+      allow list, get: if true;
+    }
+    match /contas/{contaId}/promocoes/{doc} {
+      allow list, get: if true;
+    }
+
+    // Pedido: cliente pode criar e ler o próprio pedido pelo ID exato (link de status)
+    // get = documento específico | list (sem get) = bloqueado → ninguém lista todos os pedidos
+    match /contas/{contaId}/pedidos/{pedidoId} {
+      allow get: if true;
+      allow create: if true;
+    }
   }
 }

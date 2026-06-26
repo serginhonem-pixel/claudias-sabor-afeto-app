@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { getConta, getContaBySlug, getProdutos, getProximoNumeroPedido, savePedido, getClienteByWhatsapp, getPedidosByWhatsapp } from "@/lib/firestore";
+import { getConta, getContaBySlug, getProdutos, getProximoNumeroPedido, savePedido } from "@/lib/firestore";
 import { getPromocoesGrupo } from "@/lib/firestore";
 import Image from "next/image";
 import { Plus, Minus, ShoppingBag, ChevronRight, X, ArrowLeft, Check } from "lucide-react";
@@ -411,18 +411,18 @@ export default function PedidoClientePage() {
   async function buscarCliente() {
     if (!wppInput.trim() || !realContaId) return;
     setIdentificacao("buscando");
-    const cliente = await getClienteByWhatsapp(realContaId, wppInput.trim());
-    if (cliente) {
-      const pedidos = await getPedidosByWhatsapp(realContaId, wppInput.trim());
-      setClienteEncontrado(cliente);
-      setPedidosAnteriores(pedidos);
-      setNome(cliente.nome);
-      setWhatsapp(cliente.whatsapp || wppInput.trim());
-      setEndereco(cliente.endereco ?? "");
-      setNumEnd(cliente.numero ?? "");
-      setComplemento(cliente.complemento ?? "");
-      setBairro(cliente.bairro ?? "");
-      setCidade(cliente.cidade ?? "");
+    const res = await fetch(`/api/cliente-whatsapp?contaId=${realContaId}&whatsapp=${encodeURIComponent(wppInput.trim())}`);
+    const data = await res.json();
+    if (data.cliente) {
+      setClienteEncontrado(data.cliente);
+      setPedidosAnteriores(data.pedidos ?? []);
+      setNome(data.cliente.nome);
+      setWhatsapp(data.cliente.whatsapp || wppInput.trim());
+      setEndereco(data.cliente.endereco ?? "");
+      setNumEnd(data.cliente.numero ?? "");
+      setComplemento(data.cliente.complemento ?? "");
+      setBairro(data.cliente.bairro ?? "");
+      setCidade(data.cliente.cidade ?? "");
       setIdentificacao("encontrado");
     } else {
       setIdentificacao("nao_encontrado");
