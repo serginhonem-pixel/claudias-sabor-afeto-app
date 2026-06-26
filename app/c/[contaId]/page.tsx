@@ -458,14 +458,6 @@ export default function PedidoClientePage() {
     return promocoes.find(pr => pr.tipo === tipo && pr.ativo) ?? null;
   }
 
-  function getProdutoPromocoes(produto: Produto) {
-    const promotable = produto.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0);
-    if (promotable?.length) return promotable.map(p => ({ quantidade: p.quantidade, precoBundle: p.preco }));
-    const grupo = getGrupoPromocao(produto);
-    if (!grupo) return null;
-    return [{ quantidade: grupo.quantidade, precoPorUnidade: grupo.precoPorUnidade }];
-  }
-
   function getTotalGroupQuantity(tipo: string) {
     return carrinho.reduce((sum, item) => {
       const itemTipo = item.produto.tipo || "";
@@ -1187,7 +1179,6 @@ export default function PedidoClientePage() {
                               const threshold = grupoPromo.quantidade;
                               const loteAtivo = Math.floor(cartTotal / threshold);
                               const progressNoLote = cartTotal % threshold;
-                              const faltamProximo = threshold - progressNoLote;
                               const progressPct = threshold > 0 ? (progressNoLote / threshold) * 100 : 0;
                               const isActive = loteAtivo > 0;
                               const precoUnit = grupoPromo.precoPorUnidade;

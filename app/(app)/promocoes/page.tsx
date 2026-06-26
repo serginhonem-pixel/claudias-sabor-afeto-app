@@ -146,7 +146,7 @@ export default function PromocoesPage() {
             ) : (
               <input className="field-input" value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} placeholder="Ex: FATIAS" />
             )}
-            <p className="text-xs text-muted mt-1">Deve ser igual ao campo "Tipo / Grupo" dos produtos.</p>
+            <p className="text-xs text-muted mt-1">Deve ser igual ao campo &quot;Tipo / Grupo&quot; dos produtos.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
