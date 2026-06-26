@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Usuários autenticados podem fazer upload e ler fotos em qualquer conta
+    // Segurança adicional: frontend valida acesso à conta via useConta hook
+    match /contas/{contaId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

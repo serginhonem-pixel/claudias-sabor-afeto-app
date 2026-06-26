@@ -92,6 +92,7 @@ function BottomNav({ onSignOut, maisAberto, setMaisAberto }: { onSignOut: () => 
     { href: "/clientes",      emoji: "👥", label: "Clientes" },
     { href: "/calendario",    emoji: "📅", label: "Calendário" },
     { href: "/compras",       emoji: "🛒", label: "Compras" },
+    { href: "/promocoes",    emoji: "🔥", label: "Promoções" },
     { href: "/orcamento",     emoji: "📋", label: "Orçamento" },
     { href: "/configuracoes", emoji: "⚙️", label: "Config." },
   ];
