@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { getConta, getProdutos, getProximoNumeroPedido, savePedido, getClienteByWhatsapp, getPedidosByWhatsapp } from "@/lib/firestore";
+import { getPromocoesGrupo } from "@/lib/firestore";
 import Image from "next/image";
 import { Plus, Minus, ShoppingBag, ChevronRight, X, ArrowLeft, Check } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
@@ -366,6 +367,7 @@ export default function PedidoClientePage() {
   const { contaId } = useParams<{ contaId: string }>();
   const [conta, setConta] = useState<Conta | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [promocoes, setPromocoes] = useState<import("@/types").GrupoPromocao[]>([]);
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
@@ -392,9 +394,10 @@ export default function PedidoClientePage() {
 
   useEffect(() => {
     if (!contaId) return;
-    Promise.all([getConta(contaId), getProdutos(contaId)]).then(([c, ps]) => {
+    Promise.all([getConta(contaId), getProdutos(contaId), getPromocoesGrupo(contaId)]).then(([c, ps, promos]) => {
       setConta(c);
       setProdutos(ps.filter(p => p.status === "ativo" || p.status === "encomenda"));
+      setPromocoes(promos || []);
       setLoading(false);
     });
   }, [contaId]);
@@ -444,11 +447,15 @@ export default function PedidoClientePage() {
   }
 
   function getGrupoPromocoes(produto: Produto) {
+    // Prefer promotions defined directly on product
     const promotable = produto.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0);
-    if (promotable?.length) return promotable;
-    if (!produto.promoGrupo) return null;
-    const group = produtos.find(p => p.promoGrupo === produto.promoGrupo && p.promocoes?.length);
-    return group?.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0) ?? null;
+    if (promotable?.length) return promotable.map(p => ({ quantidade: p.quantidade, precoBundle: p.preco }));
+    // Then check promotions collection by produto.tipo or promoGrupo
+    const tipo = produto.tipo || produto.promoGrupo || "";
+    if (!tipo) return null;
+    const grupo = promocoes.find(pr => pr.tipo === tipo && pr.ativo);
+    if (!grupo) return null;
+    return [{ quantidade: grupo.quantidade, precoPorUnidade: grupo.precoPorUnidade }];
   }
 
   function getPromocaoTotal(produto: Produto, quantidade: number) {
@@ -458,12 +465,14 @@ export default function PedidoClientePage() {
     dp[0] = 0;
     for (let i = 1; i <= quantidade; i++) {
       dp[i] = dp[i - 1] + produto.precoVenda;
-      for (const promo of promocoes) {
-        const q = Math.max(1, Math.round(promo.quantidade));
-        if (q <= i) {
-          dp[i] = Math.min(dp[i], dp[i - q] + promo.preco);
+      type PromoCalc = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
+      for (const promo of promocoes as PromoCalc[]) {
+          const q = Math.max(1, Math.round(promo.quantidade));
+          const priceForQ = promo.precoBundle ?? ((promo.precoPorUnidade ?? 0) * q);
+          if (q <= i) {
+            dp[i] = Math.min(dp[i], dp[i - q] + priceForQ);
+          }
         }
-      }
     }
     return Number(dp[quantidade].toFixed(2));
   }
@@ -1142,16 +1151,20 @@ export default function PedidoClientePage() {
                           )}
                           {(() => {
                             const grupo = getGrupoPromocoes(p);
+                            type PromoDisplay = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
                             return grupo && grupo.length > 0 ? (
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                                {grupo.map(pr => (
-                                  <span key={`${pr.quantidade}-${pr.preco}`} style={{
-                                  fontSize: 11, fontWeight: 600, color: C.bg,
-                                  background: C.gold, borderRadius: 999, padding: "4px 10px",
-                                }}>
-                                  {pr.quantidade} por {fmt(pr.preco)}
-                                </span>
-                                ))}
+                                {grupo.map(pr => {
+                                  const precoDisplay = (pr as PromoDisplay).precoBundle ?? ((pr as PromoDisplay).precoPorUnidade ?? 0) * pr.quantidade;
+                                  return (
+                                    <span key={`${pr.quantidade}-${precoDisplay}`} style={{
+                                      fontSize: 11, fontWeight: 600, color: C.bg,
+                                      background: C.gold, borderRadius: 999, padding: "4px 10px",
+                                    }}>
+                                      {pr.quantidade} por {fmt(precoDisplay)}
+                                    </span>
+                                  );
+                                })}
                               </div>
                             ) : null;
                           })()}

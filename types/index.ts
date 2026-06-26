@@ -85,10 +85,21 @@ export interface PromocaoProduto {
   preco: number;
 }
 
+export interface GrupoPromocao {
+  id?: string;
+  contaId?: string;
+  tipo: string; // grupo/tipo de produto (ex: FATIAS)
+  quantidade: number;
+  precoPorUnidade: number;
+  ativo: boolean;
+  createdAt?: Date;
+}
+
 export interface Produto {
   id: string;
   contaId: string;
   nome: string;
+  tipo?: string;
   categoria: "Confeitaria" | "Salgado" | "Panificado" | "Kit" | "Outro";
   unidadeVenda: string;
   precoVenda: number;

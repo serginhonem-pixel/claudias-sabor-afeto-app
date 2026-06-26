@@ -3,7 +3,7 @@ import {
   deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Conta, Cliente, Insumo, Receita, Produto, Pedido } from "@/types";
+import type { Conta, Cliente, Insumo, Receita, Produto, Pedido, GrupoPromocao } from "@/types";
 
 function requireDb() {
   if (!db) throw new Error("Firebase não configurado.");
@@ -136,6 +136,22 @@ export async function saveProduto(contaId: string, data: Omit<Produto, "id" | "c
 
 export async function deleteProduto(contaId: string, id: string) {
   await deleteDoc(docRef(contaId, "produtos", id));
+}
+
+// ─── PROMOÇÕES POR GRUPO/TIPO ───────────────────────────────────────────────
+export async function getPromocoesGrupo(contaId: string): Promise<GrupoPromocao[]> {
+  const snap = await getDocs(query(col(contaId, "promocoes"), orderBy("tipo")));
+  return snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: fromTs(d.data().createdAt) })) as GrupoPromocao[];
+}
+
+export async function savePromocaoGrupo(contaId: string, data: Omit<GrupoPromocao, "id" | "contaId" | "createdAt">, id?: string): Promise<string> {
+  if (id) { await updateDoc(docRef(contaId, "promocoes", id), data as DocumentData); return id; }
+  const ref = await addDoc(col(contaId, "promocoes"), { ...data, contaId, createdAt: Timestamp.now() });
+  return ref.id;
+}
+
+export async function deletePromocaoGrupo(contaId: string, id: string) {
+  await deleteDoc(docRef(contaId, "promocoes", id));
 }
 
 // ─── PEDIDOS ────────────────────────────────────────────────────────────────

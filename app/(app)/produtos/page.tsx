@@ -25,6 +25,7 @@ const EMPTY: Omit<Produto,"id"|"contaId"> = {
   custoProduto:0, cmvPercent:0, descricao:"", prazoProduzDias:1, status:"ativo", createdAt: new Date(),
   promocoes: [],
   promoGrupo: "",
+  tipo: "",
 };
 
 function fmt(v: number) { return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
@@ -273,6 +274,10 @@ export default function ProdutosPage() {
               <select className="field-input" value={form.unidadeVenda} onChange={e => setForm(f => ({ ...f, unidadeVenda: e.target.value }))}>
                 {["Unidade","Kit 10un","Kit 20un","Kit 30un","Kit 50un","Caixa","Porção","Kg"].map(u=><option key={u}>{u}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="field-label">Tipo / Grupo</label>
+              <input className="field-input" value={form.tipo ?? ""} onChange={e => setForm(f=>({...f,tipo:e.target.value}))} placeholder="Ex: FATIAS" />
             </div>
             <div>
               <label className="field-label">Preço de Venda (R$)</label>
