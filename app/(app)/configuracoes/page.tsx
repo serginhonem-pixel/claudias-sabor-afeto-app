@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
 import { updateConta } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
-import { Save, Link2, Copy, Plus, X } from "lucide-react";
+import { Save, Link2, Copy, Plus, X, Download, QrCode } from "lucide-react";
 import toast from "react-hot-toast";
 import type { CustoFixo } from "@/types";
 
@@ -217,6 +217,38 @@ export default function ConfigPage() {
           )}
         </div>
 
+
+        {/* QR Code */}
+        {conta && (() => {
+          const slugAtual = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+          const path = slugAtual ? `/c/${slugAtual}` : `/c/${conta.id}`;
+          const origin = typeof window !== "undefined" ? window.location.origin : "https://claudias-sabor-afeto-app.vercel.app";
+          const cardapioUrl = `${origin}${path}`;
+          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(cardapioUrl)}&color=170D08&bgcolor=F6EFE1&margin=12`;
+          return (
+            <div className="bg-white rounded-xl border border-rose-light/60 p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <QrCode size={18} className="text-rose mt-0.5 shrink-0" />
+                <div>
+                  <h2 className="font-heading font-semibold text-dark text-sm">QR Code do Cardápio</h2>
+                  <p className="text-xs text-muted mt-1">Imprima e coloque nas embalagens, balcão ou stories.</p>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrUrl} alt="QR Code do cardápio" width={160} height={160} className="rounded-xl border border-rose-light" />
+                <p className="text-[0.65rem] text-muted font-mono text-center break-all">{cardapioUrl}</p>
+                <a
+                  href={qrUrl}
+                  download="qrcode-cardapio.png"
+                  className="w-full flex items-center justify-center gap-2 border border-rose-light hover:bg-rose-light/30 text-muted text-sm font-medium py-2 rounded-xl transition"
+                >
+                  <Download size={13} /> Baixar QR Code
+                </a>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Sobre o app */}
         <div className="bg-white rounded-xl border border-rose-light/60 p-5">

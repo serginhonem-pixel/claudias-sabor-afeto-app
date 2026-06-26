@@ -163,6 +163,12 @@ export async function deletePromocaoGrupo(contaId: string, id: string) {
 }
 
 // ─── PEDIDOS ────────────────────────────────────────────────────────────────
+export async function getPedidoById(contaId: string, pedidoId: string): Promise<Pedido | null> {
+  const snap = await getDoc(doc(requireDb(), "contas", contaId, "pedidos", pedidoId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data(), createdAt: fromTs(snap.data().createdAt), updatedAt: fromTs(snap.data().updatedAt) } as Pedido;
+}
+
 export async function getPedidos(contaId: string): Promise<Pedido[]> {
   const snap = await getDocs(query(col(contaId, "pedidos"), orderBy("createdAt", "desc")));
   return snap.docs.map(d => ({

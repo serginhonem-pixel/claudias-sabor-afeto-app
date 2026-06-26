@@ -524,7 +524,7 @@ export default function PedidoClientePage() {
         };
       });
       const enderecoEntrega = [endereco.trim(), numEnd.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
-      await savePedido(realContaId, {
+      const pedidoId = await savePedido(realContaId, {
         numero,
         clienteId: "",
         clienteNome: nome.trim(),
@@ -542,6 +542,8 @@ export default function PedidoClientePage() {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
+      const statusUrl = `${window.location.origin}/pedido/${realContaId}/${pedidoId}`;
 
       fetch("/api/notificar-pedido", {
         method: "POST",
@@ -574,6 +576,8 @@ export default function PedidoClientePage() {
         `💰 *Total: ${fmt(total)}*`,
         personalizacao.trim() ? `✏️ *Personalização:* ${personalizacao.trim()}` : "",
         obs.trim() ? `📝 *Obs:* ${obs.trim()}` : "",
+        ``,
+        `🔗 *Acompanhe seu pedido:* ${statusUrl}`,
       ].filter(Boolean).join("\n");
 
       const telefone = conta?.telefone?.replace(/\D/g, "") ?? "";

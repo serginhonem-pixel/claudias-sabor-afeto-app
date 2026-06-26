@@ -15,7 +15,7 @@ export function useFCM(contaId: string | undefined) {
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
 
-        const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
+        const swReg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
         const messaging = getMessaging(app!);
         const token = await getToken(messaging, {
           vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
