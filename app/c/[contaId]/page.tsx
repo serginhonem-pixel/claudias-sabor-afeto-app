@@ -443,7 +443,42 @@ export default function PedidoClientePage() {
     return carrinho.find(i => i.produto.id === produtoId)?.quantidade ?? 0;
   }
 
-  const total = carrinho.reduce((s, i) => s + i.produto.precoVenda * i.quantidade, 0);
+  function getGrupoPromocoes(produto: Produto) {
+    const promotable = produto.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0);
+    if (promotable?.length) return promotable;
+    if (!produto.promoGrupo) return null;
+    const group = produtos.find(p => p.promoGrupo === produto.promoGrupo && p.promocoes?.length);
+    return group?.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0) ?? null;
+  }
+
+  function getPromocaoTotal(produto: Produto, quantidade: number) {
+    const promocoes = getGrupoPromocoes(produto);
+    if (!promocoes?.length) return null;
+    const dp = Array(quantidade + 1).fill(Number.POSITIVE_INFINITY);
+    dp[0] = 0;
+    for (let i = 1; i <= quantidade; i++) {
+      dp[i] = dp[i - 1] + produto.precoVenda;
+      for (const promo of promocoes) {
+        const q = Math.max(1, Math.round(promo.quantidade));
+        if (q <= i) {
+          dp[i] = Math.min(dp[i], dp[i - q] + promo.preco);
+        }
+      }
+    }
+    return Number(dp[quantidade].toFixed(2));
+  }
+
+  function getProdutoSubtotal(produto: Produto, quantidade: number) {
+    const valor = getPromocaoTotal(produto, quantidade);
+    return valor !== null ? valor : produto.precoVenda * quantidade;
+  }
+
+  function getProdutoPrecoUnitario(produto: Produto, quantidade: number) {
+    if (quantidade === 0) return produto.precoVenda;
+    return getProdutoSubtotal(produto, quantidade) / quantidade;
+  }
+
+  const total = carrinho.reduce((s, i) => s + getProdutoSubtotal(i.produto, i.quantidade), 0);
   const totalItens = carrinho.reduce((s, i) => s + i.quantidade, 0);
   const catsComProdutos = CATS.filter(c => produtos.some(p => p.categoria === c));
 
@@ -460,13 +495,16 @@ export default function PedidoClientePage() {
     setEnviando(true);
     try {
       const numero = await getProximoNumeroPedido(contaId);
-      const itens = carrinho.map(i => ({
-        produtoId: i.produto.id,
-        produtoNome: i.produto.nome,
-        quantidade: i.quantidade,
-        precoUnit: i.produto.precoVenda,
-        subtotal: i.produto.precoVenda * i.quantidade,
-      }));
+      const itens = carrinho.map(i => {
+        const subtotal = getProdutoSubtotal(i.produto, i.quantidade);
+        return {
+          produtoId: i.produto.id,
+          produtoNome: i.produto.nome,
+          quantidade: i.quantidade,
+          precoUnit: subtotal / i.quantidade,
+          subtotal,
+        };
+      });
       const enderecoEntrega = [endereco.trim(), numEnd.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
       await savePedido(contaId, {
         numero,
@@ -1107,6 +1145,23 @@ export default function PedidoClientePage() {
                               {p.descricao}
                             </p>
                           )}
+                          {getGrupoPromocoes(p)?.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                              {getGrupoPromocoes(p)?.map(pr => (
+                                <span key={`${pr.quantidade}-${pr.preco}`} style={{
+                                  fontSize: 11, fontWeight: 600, color: C.bg,
+                                  background: C.gold, borderRadius: 999, padding: "4px 10px",
+                                }}>
+                                  {pr.quantidade} por {fmt(pr.preco)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {p.promoGrupo && (
+                            <p style={{ fontSize: 10, color: C.muted, marginTop: 8 }}>
+                              Promo grupo: {p.promoGrupo}
+                            </p>
+                          )}
 
                           {/* Controls */}
                           <div style={{ marginTop: 14 }}>
@@ -1223,7 +1278,7 @@ export default function PedidoClientePage() {
                       {i.produto.nome}
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: C.gold, flexShrink: 0 }}>
-                      {fmt(i.produto.precoVenda * i.quantidade)}
+                      {fmt(getProdutoSubtotal(i.produto, i.quantidade))}
                     </span>
                   </div>
                 ))}

@@ -23,6 +23,8 @@ function toDirectImageUrl(url: string): string {
 const EMPTY: Omit<Produto,"id"|"contaId"> = {
   nome:"", categoria:"Confeitaria", unidadeVenda:"Unidade", precoVenda:0,
   custoProduto:0, cmvPercent:0, descricao:"", prazoProduzDias:1, status:"ativo", createdAt: new Date(),
+  promocoes: [],
+  promoGrupo: "",
 };
 
 function fmt(v: number) { return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
@@ -53,7 +55,7 @@ export default function ProdutosPage() {
 
   function openEdit(p: Produto) {
     setEditando(p);
-    setForm({...p});
+    setForm({ ...p, promocoes: p.promocoes ?? [], promoGrupo: p.promoGrupo ?? "" });
     // migrar formato antigo (receitaId único) para array
     if (p.receitasVinculadas?.length) {
       setReceitasVinculadas(p.receitasVinculadas);
@@ -108,6 +110,10 @@ export default function ProdutosPage() {
         ? calcCustoTotal(receitasVinculadas, form.unidadeVenda)
         : form.custoProduto;
       const cmv = calcCmv(form.precoVenda, custoProduto);
+      const promocoes = (form.promocoes ?? [])
+        .map(p => ({ quantidade: Math.max(1, Math.round(p.quantidade)), preco: arredondar(p.preco) }))
+        .filter(p => p.quantidade > 0 && p.preco > 0)
+        .sort((a, b) => a.quantidade - b.quantidade);
       await saveProduto(conta.id, {
         ...form,
         nome: form.nome.trim(),
@@ -116,6 +122,8 @@ export default function ProdutosPage() {
         receitasVinculadas,
         receitaId: receitasVinculadas[0]?.receitaId,
         receitaNome: receitasVinculadas[0]?.receitaNome,
+        promocoes,
+        promoGrupo: form.promoGrupo?.trim() ?? "",
       }, editando?.id);
       toast.success(editando ? "Produto atualizado!" : "Produto criado!");
       setModal(false); load();
@@ -211,6 +219,15 @@ export default function ProdutosPage() {
                     ))}
                   </div>
                 )}
+                {p.promocoes?.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {p.promocoes.map(pr => (
+                      <span key={`${pr.quantidade}-${pr.preco}`} className="text-[0.6rem] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full truncate max-w-full">
+                        {pr.quantidade} por {fmt(pr.preco)}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Rodapé */}
                 <div className="flex items-center justify-between border-t border-rose-light/40 pt-2 -mb-1">
@@ -267,6 +284,76 @@ export default function ProdutosPage() {
                 <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="field-label">Grupo de promoção</label>
+            <input
+              className="field-input"
+              value={form.promoGrupo ?? ""}
+              onChange={e => setForm(f => ({ ...f, promoGrupo: e.target.value }))}
+              placeholder="Ex: fatias, doces do dia"
+            />
+            <p className="text-[0.75rem] text-muted">Use o mesmo grupo para itens que participam da mesma promoção.</p>
+          </div>
+
+          <div>
+            <label className="field-label">Promoções</label>
+            <div className="space-y-2">
+              {(form.promocoes ?? []).map((promo, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                  <div>
+                    <label className="field-label">Qtd.</label>
+                    <input
+                      type="number" min="1" step="1" className="field-input"
+                      value={promo.quantidade}
+                      onChange={e => {
+                        const quantidade = Number(e.target.value);
+                        setForm(f => ({
+                          ...f,
+                          promocoes: (f.promocoes ?? []).map((item, i) => i === idx ? { ...item, quantidade } : item),
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">Preço (R$)</label>
+                    <input
+                      type="number" min="0" step="0.01" className="field-input"
+                      value={promo.preco}
+                      onChange={e => {
+                        const preco = Number(e.target.value);
+                        setForm(f => ({
+                          ...f,
+                          promocoes: (f.promocoes ?? []).map((item, i) => i === idx ? { ...item, preco } : item),
+                        }));
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({
+                      ...f,
+                      promocoes: (f.promocoes ?? []).filter((_, i) => i !== idx),
+                    }))}
+                    className="text-red-500 text-sm font-semibold"
+                  >
+                    Remover
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setForm(f => ({
+                  ...f,
+                  promocoes: [...(f.promocoes ?? []), { quantidade: 2, preco: 0 }],
+                }))}
+                className="bg-cream rounded-xl px-3 py-2 text-xs font-semibold text-dark hover:bg-cream/90 transition"
+              >
+                Adicionar promoção
+              </button>
+              <p className="text-[0.75rem] text-muted">Ex: 1 por 28 e 2 por 25. Deixe campos vazios para não salvar.</p>
+            </div>
           </div>
 
           {/* Receitas vinculadas */}

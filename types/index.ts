@@ -80,6 +80,11 @@ export interface ReceitaVinculada {
   qtdPorUnidade?: number;
 }
 
+export interface PromocaoProduto {
+  quantidade: number;
+  preco: number;
+}
+
 export interface Produto {
   id: string;
   contaId: string;
@@ -90,6 +95,8 @@ export interface Produto {
   receitaId?: string;
   receitaNome?: string;
   receitasVinculadas?: ReceitaVinculada[];
+  promocoes?: PromocaoProduto[];
+  promoGrupo?: string;
   custoProduto: number;
   cmvPercent: number;
   descricao?: string;
