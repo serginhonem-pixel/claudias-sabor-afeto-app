@@ -446,20 +446,36 @@ export default function PedidoClientePage() {
     return carrinho.find(i => i.produto.id === produtoId)?.quantidade ?? 0;
   }
 
-  function getGrupoPromocoes(produto: Produto) {
-    // Prefer promotions defined directly on product
+  function getGrupoPromocao(produto: Produto) {
+    const tipo = produto.promoGrupo || produto.tipo || "";
+    if (!tipo) return null;
+    return promocoes.find(pr => pr.tipo === tipo && pr.ativo) ?? null;
+  }
+
+  function getProdutoPromocoes(produto: Produto) {
     const promotable = produto.promocoes?.filter(p => p.quantidade > 0 && p.preco > 0);
     if (promotable?.length) return promotable.map(p => ({ quantidade: p.quantidade, precoBundle: p.preco }));
-    // Then check promotions collection by produto.tipo or promoGrupo
-    const tipo = produto.tipo || produto.promoGrupo || "";
-    if (!tipo) return null;
-    const grupo = promocoes.find(pr => pr.tipo === tipo && pr.ativo);
+    const grupo = getGrupoPromocao(produto);
     if (!grupo) return null;
     return [{ quantidade: grupo.quantidade, precoPorUnidade: grupo.precoPorUnidade }];
   }
 
+  function getTotalGroupQuantity(tipo: string) {
+    return carrinho.reduce((sum, item) => {
+      const itemTipo = item.produto.promoGrupo || item.produto.tipo || "";
+      return sum + (itemTipo === tipo ? item.quantidade : 0);
+    }, 0);
+  }
+
+  function getGroupPromoUnitPrice(produto: Produto) {
+    const grupo = getGrupoPromocao(produto);
+    if (!grupo) return null;
+    const totalQty = getTotalGroupQuantity(grupo.tipo);
+    return totalQty >= grupo.quantidade ? grupo.precoPorUnidade : null;
+  }
+
   function getPromocaoTotal(produto: Produto, quantidade: number) {
-    const promocoes = getGrupoPromocoes(produto);
+    const promocoes = getProdutoPromocoes(produto);
     if (!promocoes?.length) return null;
     const dp = Array(quantidade + 1).fill(Number.POSITIVE_INFINITY);
     dp[0] = 0;
@@ -467,17 +483,19 @@ export default function PedidoClientePage() {
       dp[i] = dp[i - 1] + produto.precoVenda;
       type PromoCalc = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
       for (const promo of promocoes as PromoCalc[]) {
-          const q = Math.max(1, Math.round(promo.quantidade));
-          const priceForQ = promo.precoBundle ?? ((promo.precoPorUnidade ?? 0) * q);
-          if (q <= i) {
-            dp[i] = Math.min(dp[i], dp[i - q] + priceForQ);
-          }
+        const q = Math.max(1, Math.round(promo.quantidade));
+        const priceForQ = promo.precoBundle ?? ((promo.precoPorUnidade ?? 0) * q);
+        if (q <= i) {
+          dp[i] = Math.min(dp[i], dp[i - q] + priceForQ);
         }
+      }
     }
     return Number(dp[quantidade].toFixed(2));
   }
 
   function getProdutoSubtotal(produto: Produto, quantidade: number) {
+    const promoUnitPrice = getGroupPromoUnitPrice(produto);
+    if (promoUnitPrice !== null) return promoUnitPrice * quantidade;
     const valor = getPromocaoTotal(produto, quantidade);
     return valor !== null ? valor : produto.precoVenda * quantidade;
   }
@@ -1150,29 +1168,37 @@ export default function PedidoClientePage() {
                             </p>
                           )}
                           {(() => {
-                            const grupo = getGrupoPromocoes(p);
+                            const grupo = getProdutoPromocoes(p);
                             type PromoDisplay = { quantidade: number; precoBundle?: number; precoPorUnidade?: number };
-                            return grupo && grupo.length > 0 ? (
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                                {grupo.map(pr => {
-                                  const precoDisplay = (pr as PromoDisplay).precoBundle ?? ((pr as PromoDisplay).precoPorUnidade ?? 0) * pr.quantidade;
-                                  return (
-                                    <span key={`${pr.quantidade}-${precoDisplay}`} style={{
-                                      fontSize: 11, fontWeight: 600, color: C.bg,
-                                      background: C.gold, borderRadius: 999, padding: "4px 10px",
-                                    }}>
-                                      {pr.quantidade} por {fmt(precoDisplay)}
-                                    </span>
-                                  );
-                                })}
+                            if (!grupo || grupo.length === 0) return null;
+                            return (
+                              <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 10, background: "rgba(216,185,116,0.14)", border: `1px solid ${C.goldSoft}` }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: C.gold }}>
+                                    Promoção ativa
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                  {grupo.map(pr => {
+                                    const precoDisplay = (pr as PromoDisplay).precoBundle ?? ((pr as PromoDisplay).precoPorUnidade ?? 0) * pr.quantidade;
+                                    return (
+                                      <span key={`${pr.quantidade}-${precoDisplay}`} style={{
+                                        fontSize: 11, fontWeight: 700, color: C.bg,
+                                        background: C.gold, borderRadius: 999, padding: "5px 10px",
+                                      }}>
+                                        {pr.quantidade} por {fmt(precoDisplay)}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                                {p.promoGrupo && (
+                                  <p style={{ fontSize: 10, color: C.muted, marginTop: 7 }}>
+                                    Grupo: {p.promoGrupo}
+                                  </p>
+                                )}
                               </div>
-                            ) : null;
+                            );
                           })()}
-                          {p.promoGrupo && (
-                            <p style={{ fontSize: 10, color: C.muted, marginTop: 8 }}>
-                              Promo grupo: {p.promoGrupo}
-                            </p>
-                          )}
 
                           {/* Controls */}
                           <div style={{ marginTop: 14 }}>
