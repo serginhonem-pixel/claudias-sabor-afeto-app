@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
 import { getProdutos, saveProduto, deleteProduto, getReceitas } from "@/lib/firestore";
+import { uploadFotoProduto } from "@/lib/firebase";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
@@ -39,6 +40,7 @@ export default function ProdutosPage() {
   const [editando, setEditando] = useState<Produto | null>(null);
   const [form, setForm] = useState({...EMPTY});
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [receitasVinculadas, setReceitasVinculadas] = useState<ReceitaVinculada[]>([]);
   const [receitaSelId, setReceitaSelId] = useState("");
 
@@ -135,6 +137,21 @@ export default function ProdutosPage() {
   async function handleDelete(id: string) {
     if (!conta || !confirm("Excluir produto?")) return;
     await deleteProduto(conta.id, id); toast.success("Removido"); load();
+  }
+
+  async function handleUploadFoto(file: File) {
+    if (!conta || !editando?.id) { toast.error("Abra um produto para fazer upload"); return; }
+    setUploading(true);
+    try {
+      const url = await uploadFotoProduto(conta.id, editando.id, file);
+      setForm(f => ({ ...f, imagemUrl: url }));
+      toast.success("Foto enviada!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao enviar foto");
+    } finally {
+      setUploading(false);
+    }
   }
 
   const filtrados = filtro === "todos" ? produtos : produtos.filter(p => p.categoria === filtro);
@@ -262,6 +279,27 @@ export default function ProdutosPage() {
             <label className="field-label">Nome *</label>
             <input className="field-input" value={form.nome} onChange={e => setForm(f=>({...f,nome:e.target.value}))} placeholder="Ex: Bolo de Brigadeiro" />
           </div>
+          {editando && (
+            <div>
+              <label className="field-label">Foto do Produto</label>
+              <div className="flex gap-2 items-start">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => e.target.files?.[0] && handleUploadFoto(e.target.files[0])}
+                  disabled={uploading}
+                  className="text-xs flex-1"
+                />
+                {uploading && <span className="text-xs text-muted">Enviando...</span>}
+              </div>
+              {form.imagemUrl && (
+                <div className="mt-2 relative inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.imagemUrl} alt="Preview" className="w-24 h-24 object-cover rounded border border-rose-light" />
+                </div>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="field-label">Categoria</label>
@@ -289,76 +327,6 @@ export default function ProdutosPage() {
                 <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
               </div>
             )}
-          </div>
-
-          <div>
-            <label className="field-label">Grupo de promoção</label>
-            <input
-              className="field-input"
-              value={form.promoGrupo ?? ""}
-              onChange={e => setForm(f => ({ ...f, promoGrupo: e.target.value }))}
-              placeholder="Ex: fatias, doces do dia"
-            />
-            <p className="text-[0.75rem] text-muted">Use o mesmo grupo para itens que participam da mesma promoção.</p>
-          </div>
-
-          <div>
-            <label className="field-label">Promoções</label>
-            <div className="space-y-2">
-              {(form.promocoes ?? []).map((promo, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                  <div>
-                    <label className="field-label">Qtd.</label>
-                    <input
-                      type="number" min="1" step="1" className="field-input"
-                      value={promo.quantidade}
-                      onChange={e => {
-                        const quantidade = Number(e.target.value);
-                        setForm(f => ({
-                          ...f,
-                          promocoes: (f.promocoes ?? []).map((item, i) => i === idx ? { ...item, quantidade } : item),
-                        }));
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label">Preço (R$)</label>
-                    <input
-                      type="number" min="0" step="0.01" className="field-input"
-                      value={promo.preco}
-                      onChange={e => {
-                        const preco = Number(e.target.value);
-                        setForm(f => ({
-                          ...f,
-                          promocoes: (f.promocoes ?? []).map((item, i) => i === idx ? { ...item, preco } : item),
-                        }));
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({
-                      ...f,
-                      promocoes: (f.promocoes ?? []).filter((_, i) => i !== idx),
-                    }))}
-                    className="text-red-500 text-sm font-semibold"
-                  >
-                    Remover
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setForm(f => ({
-                  ...f,
-                  promocoes: [...(f.promocoes ?? []), { quantidade: 2, preco: 0 }],
-                }))}
-                className="bg-cream rounded-xl px-3 py-2 text-xs font-semibold text-dark hover:bg-cream/90 transition"
-              >
-                Adicionar promoção
-              </button>
-              <p className="text-[0.75rem] text-muted">Ex: 1 por 28 e 2 por 25. Deixe campos vazios para não salvar.</p>
-            </div>
           </div>
 
           {/* Receitas vinculadas */}
