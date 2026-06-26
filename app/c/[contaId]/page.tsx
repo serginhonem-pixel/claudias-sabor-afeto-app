@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { getConta, getProdutos, getProximoNumeroPedido, savePedido, getClienteByWhatsapp, getPedidosByWhatsapp } from "@/lib/firestore";
+import { getConta, getContaBySlug, getProdutos, getProximoNumeroPedido, savePedido, getClienteByWhatsapp, getPedidosByWhatsapp } from "@/lib/firestore";
 import { getPromocoesGrupo } from "@/lib/firestore";
 import Image from "next/image";
 import { Plus, Minus, ShoppingBag, ChevronRight, X, ArrowLeft, Check } from "lucide-react";
@@ -365,6 +365,7 @@ const toasterStyle = {
 
 export default function PedidoClientePage() {
   const { contaId } = useParams<{ contaId: string }>();
+  const [realContaId, setRealContaId] = useState<string>("");
   const [conta, setConta] = useState<Conta | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [promocoes, setPromocoes] = useState<import("@/types").GrupoPromocao[]>([]);
@@ -394,20 +395,25 @@ export default function PedidoClientePage() {
 
   useEffect(() => {
     if (!contaId) return;
-    Promise.all([getConta(contaId), getProdutos(contaId), getPromocoesGrupo(contaId)]).then(([c, ps, promos]) => {
-      setConta(c);
+    (async () => {
+      // tenta slug primeiro; se não achar, trata como ID do Firestore
+      const contaResolvida = await getContaBySlug(contaId) ?? await getConta(contaId);
+      const realId = contaResolvida?.id ?? contaId;
+      setRealContaId(realId);
+      const [ps, promos] = await Promise.all([getProdutos(realId), getPromocoesGrupo(realId)]);
+      setConta(contaResolvida);
       setProdutos(ps.filter(p => p.status === "ativo" || p.status === "encomenda"));
       setPromocoes(promos || []);
       setLoading(false);
-    });
+    })();
   }, [contaId]);
 
   async function buscarCliente() {
-    if (!wppInput.trim() || !contaId) return;
+    if (!wppInput.trim() || !realContaId) return;
     setIdentificacao("buscando");
-    const cliente = await getClienteByWhatsapp(contaId, wppInput.trim());
+    const cliente = await getClienteByWhatsapp(realContaId, wppInput.trim());
     if (cliente) {
-      const pedidos = await getPedidosByWhatsapp(contaId, wppInput.trim());
+      const pedidos = await getPedidosByWhatsapp(realContaId, wppInput.trim());
       setClienteEncontrado(cliente);
       setPedidosAnteriores(pedidos);
       setNome(cliente.nome);
@@ -516,7 +522,7 @@ export default function PedidoClientePage() {
     if (carrinho.length === 0) { toast.error("Adicione itens ao pedido"); return; }
     setEnviando(true);
     try {
-      const numero = await getProximoNumeroPedido(contaId);
+      const numero = await getProximoNumeroPedido(realContaId);
       const itens = carrinho.map(i => {
         const subtotal = getProdutoSubtotal(i.produto, i.quantidade);
         return {
@@ -528,7 +534,7 @@ export default function PedidoClientePage() {
         };
       });
       const enderecoEntrega = [endereco.trim(), numEnd.trim(), complemento.trim(), bairro.trim(), cidade.trim()].filter(Boolean).join(", ");
-      await savePedido(contaId, {
+      await savePedido(realContaId, {
         numero,
         clienteId: "",
         clienteNome: nome.trim(),
@@ -551,7 +557,7 @@ export default function PedidoClientePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contaId, numero,
+          contaId: realContaId, numero,
           clienteNome: nome.trim(),
           clienteWhatsapp: whatsapp.trim(),
           dataEntrega,
@@ -759,8 +765,14 @@ export default function PedidoClientePage() {
             </div>
           )}
 
-          <button onClick={() => setIdentificacao("pulado")} style={goldBtnStyle}>
-            Ver Cardápio
+          <button onClick={() => setIdentificacao("pulado")} style={{
+            ...goldBtnStyle,
+            padding: "15px 24px",
+            borderRadius: 999,
+            boxShadow: `0 10px 30px rgba(216,185,116,0.22)`,
+            fontSize: 11.5,
+          }}>
+            Entrar no cardápio
           </button>
         </div>
       </div>

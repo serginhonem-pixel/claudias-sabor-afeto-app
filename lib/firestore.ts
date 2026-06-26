@@ -28,6 +28,14 @@ export async function getConta(id: string): Promise<Conta | null> {
   return { id: snap.id, ...snap.data(), createdAt: fromTs(snap.data().createdAt) } as Conta;
 }
 
+export async function getContaBySlug(slug: string): Promise<Conta | null> {
+  const q = query(collection(requireDb(), "contas"), where("slug", "==", slug), limit(1));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data(), createdAt: fromTs(d.data().createdAt) } as Conta;
+}
+
 export async function createConta(data: Omit<Conta, "id" | "createdAt">): Promise<string> {
   const ref = await addDoc(collection(requireDb(), "contas"), { ...data, createdAt: Timestamp.now() });
   return ref.id;

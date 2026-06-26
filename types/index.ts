@@ -8,6 +8,7 @@ export interface CustoFixo {
 export interface Conta {
   id: string;
   nome: string;
+  slug?: string;
   telefone?: string;
   instagram?: string;
   fcmToken?: string;

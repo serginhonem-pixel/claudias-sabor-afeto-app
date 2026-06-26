@@ -10,6 +10,7 @@ import type { CustoFixo } from "@/types";
 export default function ConfigPage() {
   const { conta } = useConta();
   const [nome, setNome] = useState("");
+  const [slug, setSlug] = useState("");
   const [telefone, setTelefone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [saving, setSaving] = useState(false);
@@ -19,6 +20,7 @@ export default function ConfigPage() {
   useEffect(() => {
     if (!conta) return;
     setNome(conta.nome ?? "");
+    setSlug(conta.slug ?? "");
     setTelefone(conta.telefone ?? "");
     setInstagram(conta.instagram ?? "");
     setCustosFixos(conta.custosFixos ?? []);
@@ -54,7 +56,8 @@ export default function ConfigPage() {
     if (!nome.trim()) { toast.error("Informe o nome do negócio"); return; }
     setSaving(true);
     try {
-      await updateConta(conta.id, { nome: nome.trim(), telefone, instagram });
+      const slugLimpo = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      await updateConta(conta.id, { nome: nome.trim(), slug: slugLimpo || undefined, telefone, instagram });
       toast.success("Configurações salvas!");
     } catch { toast.error("Erro ao salvar"); }
     finally { setSaving(false); }
@@ -73,6 +76,24 @@ export default function ConfigPage() {
             <div>
               <label className="field-label">Nome do negócio</label>
               <input className="field-input" value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Claudia's Sabor e Afeto" />
+            </div>
+            <div>
+              <label className="field-label">Link do cardápio (slug)</label>
+              <div className="flex items-center border border-[#FAEDEF] rounded-[10px] overflow-hidden focus-within:border-[#E8A0AE] focus-within:shadow-[0_0_0_3px_rgba(196,86,106,0.08)]">
+                <span className="pl-3 text-xs text-muted whitespace-nowrap select-none">/c/</span>
+                <input
+                  className="flex-1 py-2 pr-3 text-sm outline-none bg-white"
+                  style={{ fontFamily: "monospace" }}
+                  value={slug}
+                  onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                  placeholder="claudia"
+                />
+              </div>
+              {slug && (
+                <p className="text-xs text-muted mt-1">
+                  Seu link ficará: <span className="font-mono text-dark">/c/{slug.replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")}</span>
+                </p>
+              )}
             </div>
             <div>
               <label className="field-label">WhatsApp / Telefone</label>
@@ -163,31 +184,35 @@ export default function ConfigPage() {
           </div>
           {conta && (
             <>
-              <div className="bg-rose-light/30 rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3">
-                <span className="text-xs text-dark font-mono flex-1 truncate">
-                  {typeof window !== "undefined" ? window.location.origin : "https://claudias-sabor-afeto-app.vercel.app"}/c/{conta.id}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/c/${conta.id}`;
-                    navigator.clipboard.writeText(url);
-                    toast.success("Link copiado!");
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 border border-rose-light hover:bg-rose-light/30 text-muted text-sm font-medium py-2 rounded-xl transition"
-                >
-                  <Copy size={13} /> Copiar link
-                </button>
-                <a
-                  href={`/c/${conta.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] text-white text-sm font-semibold py-2 rounded-xl transition"
-                >
-                  <Link2 size={13} /> Ver cardápio
-                </a>
-              </div>
+              {(() => {
+                const slugAtual = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+                const path = slugAtual ? `/c/${slugAtual}` : `/c/${conta.id}`;
+                const origin = typeof window !== "undefined" ? window.location.origin : "https://claudias-sabor-afeto-app.vercel.app";
+                const url = `${origin}${path}`;
+                return (
+                  <>
+                    <div className="bg-rose-light/30 rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3">
+                      <span className="text-xs text-dark font-mono flex-1 truncate">{url}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copiado!"); }}
+                        className="flex-1 flex items-center justify-center gap-2 border border-rose-light hover:bg-rose-light/30 text-muted text-sm font-medium py-2 rounded-xl transition"
+                      >
+                        <Copy size={13} /> Copiar link
+                      </button>
+                      <a
+                        href={path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] text-white text-sm font-semibold py-2 rounded-xl transition"
+                      >
+                        <Link2 size={13} /> Ver cardápio
+                      </a>
+                    </div>
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
