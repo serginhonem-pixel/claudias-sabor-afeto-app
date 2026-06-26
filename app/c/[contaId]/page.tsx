@@ -473,11 +473,6 @@ export default function PedidoClientePage() {
     return valor !== null ? valor : produto.precoVenda * quantidade;
   }
 
-  function getProdutoPrecoUnitario(produto: Produto, quantidade: number) {
-    if (quantidade === 0) return produto.precoVenda;
-    return getProdutoSubtotal(produto, quantidade) / quantidade;
-  }
-
   const total = carrinho.reduce((s, i) => s + getProdutoSubtotal(i.produto, i.quantidade), 0);
   const totalItens = carrinho.reduce((s, i) => s + i.quantidade, 0);
   const catsComProdutos = CATS.filter(c => produtos.some(p => p.categoria === c));
@@ -1145,18 +1140,21 @@ export default function PedidoClientePage() {
                               {p.descricao}
                             </p>
                           )}
-                          {getGrupoPromocoes(p)?.length > 0 && (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                              {getGrupoPromocoes(p)?.map(pr => (
-                                <span key={`${pr.quantidade}-${pr.preco}`} style={{
+                          {(() => {
+                            const grupo = getGrupoPromocoes(p);
+                            return grupo && grupo.length > 0 ? (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                                {grupo.map(pr => (
+                                  <span key={`${pr.quantidade}-${pr.preco}`} style={{
                                   fontSize: 11, fontWeight: 600, color: C.bg,
                                   background: C.gold, borderRadius: 999, padding: "4px 10px",
                                 }}>
                                   {pr.quantidade} por {fmt(pr.preco)}
                                 </span>
-                              ))}
-                            </div>
-                          )}
+                                ))}
+                              </div>
+                            ) : null;
+                          })()}
                           {p.promoGrupo && (
                             <p style={{ fontSize: 10, color: C.muted, marginTop: 8 }}>
                               Promo grupo: {p.promoGrupo}

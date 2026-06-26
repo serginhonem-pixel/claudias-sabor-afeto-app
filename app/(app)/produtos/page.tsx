@@ -219,7 +219,7 @@ export default function ProdutosPage() {
                     ))}
                   </div>
                 )}
-                {p.promocoes?.length > 0 && (
+                {p.promocoes && p.promocoes.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {p.promocoes.map(pr => (
                       <span key={`${pr.quantidade}-${pr.preco}`} className="text-[0.6rem] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full truncate max-w-full">
