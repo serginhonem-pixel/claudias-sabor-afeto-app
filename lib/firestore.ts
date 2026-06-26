@@ -169,6 +169,13 @@ export async function getPedidoById(contaId: string, pedidoId: string): Promise<
   return { id: snap.id, ...snap.data(), createdAt: fromTs(snap.data().createdAt), updatedAt: fromTs(snap.data().updatedAt) } as Pedido;
 }
 
+export function listenPedidoById(contaId: string, pedidoId: string, cb: (pedido: Pedido | null) => void) {
+  return onSnapshot(doc(requireDb(), "contas", contaId, "pedidos", pedidoId), snap => {
+    if (!snap.exists()) { cb(null); return; }
+    cb({ id: snap.id, ...snap.data(), createdAt: fromTs(snap.data().createdAt), updatedAt: fromTs(snap.data().updatedAt) } as Pedido);
+  });
+}
+
 export async function getPedidos(contaId: string): Promise<Pedido[]> {
   const snap = await getDocs(query(col(contaId, "pedidos"), orderBy("createdAt", "desc")));
   return snap.docs.map(d => ({

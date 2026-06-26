@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getPedidoById, getConta } from "@/lib/firestore";
+import { listenPedidoById, getConta } from "@/lib/firestore";
 import type { Pedido, Conta } from "@/types";
 
 const C = {
@@ -45,11 +45,12 @@ export default function PedidoStatusPage() {
 
   useEffect(() => {
     if (!contaId || !pedidoId) return;
-    Promise.all([getPedidoById(contaId, pedidoId), getConta(contaId)]).then(([p, c]) => {
+    getConta(contaId).then(c => setConta(c));
+    const unsub = listenPedidoById(contaId, pedidoId, p => {
       setPedido(p);
-      setConta(c);
       setLoading(false);
     });
+    return unsub;
   }, [contaId, pedidoId]);
 
   if (loading) {
