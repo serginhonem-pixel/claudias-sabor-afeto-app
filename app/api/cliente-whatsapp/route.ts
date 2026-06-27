@@ -58,7 +58,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ cliente: clienteData, pedidos });
   } catch (e) {
-    console.error("Erro ao buscar cliente:", e);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("Erro ao buscar cliente:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
