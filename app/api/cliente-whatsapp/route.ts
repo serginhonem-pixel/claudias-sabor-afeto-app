@@ -26,37 +26,19 @@ export async function GET(req: NextRequest) {
     const db = getAdminDb();
     const limpo = whatsapp.replace(/\D/g, "");
 
-    const formatarBR = (digits: string): string[] => {
-      const vars: string[] = [digits];
-      if (digits.length === 11) {
-        const ddd = digits.slice(0, 2);
-        const num = digits.slice(2);
-        vars.push(`(${ddd}) ${num.slice(0, 5)}-${num.slice(5)}`);
-        vars.push(`${ddd} ${num.slice(0, 5)}-${num.slice(5)}`);
-      } else if (digits.length === 10) {
-        const ddd = digits.slice(0, 2);
-        const num = digits.slice(2);
-        vars.push(`(${ddd}) ${num.slice(0, 4)}-${num.slice(4)}`);
-        vars.push(`${ddd} ${num.slice(0, 4)}-${num.slice(4)}`);
-      }
-      return vars;
-    };
+    // Busca todos os clientes e filtra por dígitos — funciona com qualquer formato salvo
+    const todosSnap = await db.collection("contas").doc(contaId).collection("clientes").get();
+    const clienteDoc = todosSnap.docs.find(d => {
+      const wpp = (d.data().whatsapp ?? "").replace(/\D/g, "");
+      return wpp === limpo;
+    });
 
-    const variants = Array.from(new Set(formatarBR(limpo).concat([whatsapp])));
+    if (!clienteDoc) return NextResponse.json({ cliente: null, pedidos: [] });
 
-    // Firestore só aceita até 30 valores no "in", mas aqui teremos poucos
-    const snap = await db.collection("contas").doc(contaId).collection("clientes")
-      .where("whatsapp", "in", variants)
-      .limit(1)
-      .get();
-
-    const doc = snap.docs[0];
-    if (!doc) return NextResponse.json({ cliente: null, pedidos: [] });
-
-    const clienteData = { id: doc.id, ...doc.data() };
+    const clienteData = { id: clienteDoc.id, ...clienteDoc.data() };
 
     const pedidosSnap = await db.collection("contas").doc(contaId).collection("pedidos")
-      .where("clienteWhatsapp", "in", variants)
+      .where("clienteWhatsapp", "in", [limpo, whatsapp])
       .orderBy("createdAt", "desc")
       .limit(5)
       .get();
