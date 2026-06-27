@@ -411,20 +411,24 @@ export default function PedidoClientePage() {
   async function buscarCliente() {
     if (!wppInput.trim() || !realContaId) return;
     setIdentificacao("buscando");
-    const res = await fetch(`/api/cliente-whatsapp?contaId=${realContaId}&whatsapp=${encodeURIComponent(wppInput.trim())}`);
-    const data = await res.json();
-    if (data.cliente) {
-      setClienteEncontrado(data.cliente);
-      setPedidosAnteriores(data.pedidos ?? []);
-      setNome(data.cliente.nome);
-      setWhatsapp(data.cliente.whatsapp || wppInput.trim());
-      setEndereco(data.cliente.endereco ?? "");
-      setNumEnd(data.cliente.numero ?? "");
-      setComplemento(data.cliente.complemento ?? "");
-      setBairro(data.cliente.bairro ?? "");
-      setCidade(data.cliente.cidade ?? "");
-      setIdentificacao("encontrado");
-    } else {
+    try {
+      const res = await fetch(`/api/cliente-whatsapp?contaId=${realContaId}&whatsapp=${encodeURIComponent(wppInput.trim())}`);
+      const data = await res.json();
+      if (data.cliente) {
+        setClienteEncontrado(data.cliente);
+        setPedidosAnteriores(data.pedidos ?? []);
+        setNome(data.cliente.nome);
+        setWhatsapp(data.cliente.whatsapp || wppInput.trim());
+        setEndereco(data.cliente.endereco ?? "");
+        setNumEnd(data.cliente.numero ?? "");
+        setComplemento(data.cliente.complemento ?? "");
+        setBairro(data.cliente.bairro ?? "");
+        setCidade(data.cliente.cidade ?? "");
+        setIdentificacao("encontrado");
+      } else {
+        setIdentificacao("nao_encontrado");
+      }
+    } catch {
       setIdentificacao("nao_encontrado");
     }
   }

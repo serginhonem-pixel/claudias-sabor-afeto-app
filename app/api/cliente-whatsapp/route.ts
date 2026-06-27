@@ -37,13 +37,24 @@ export async function GET(req: NextRequest) {
 
     const clienteData = { id: clienteDoc.id, ...clienteDoc.data() };
 
-    const pedidosSnap = await db.collection("contas").doc(contaId).collection("pedidos")
-      .where("clienteWhatsapp", "in", [limpo, whatsapp])
-      .orderBy("createdAt", "desc")
-      .limit(5)
-      .get();
+    // orderBy junto com "in" exige índice composto — ordena em memória para evitar isso
+    const [pedidosSnap1, pedidosSnap2] = await Promise.all([
+      db.collection("contas").doc(contaId).collection("pedidos").where("clienteWhatsapp", "==", limpo).get(),
+      limpo !== whatsapp
+        ? db.collection("contas").doc(contaId).collection("pedidos").where("clienteWhatsapp", "==", whatsapp).get()
+        : Promise.resolve({ docs: [] as FirebaseFirestore.QueryDocumentSnapshot[] }),
+    ]);
 
-    const pedidos = pedidosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const seen = new Set<string>();
+    const pedidos = [...pedidosSnap1.docs, ...pedidosSnap2.docs]
+      .filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true; })
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+        const ta = (a.createdAt as { _seconds?: number })?._seconds ?? 0;
+        const tb = (b.createdAt as { _seconds?: number })?._seconds ?? 0;
+        return tb - ta;
+      })
+      .slice(0, 5);
 
     return NextResponse.json({ cliente: clienteData, pedidos });
   } catch (e) {
