@@ -393,6 +393,8 @@ export default function PedidoClientePage() {
   const [bairro, setBairro] = useState("");
   const [cidade, setCidade] = useState("");
 
+  const STORAGE_KEY = `cardapio_cliente_${contaId}`;
+
   useEffect(() => {
     if (!contaId) return;
     (async () => {
@@ -408,6 +410,35 @@ export default function PedidoClientePage() {
     })();
   }, [contaId]);
 
+  // Ao sair da splash, verifica se cliente já visitou antes
+  useEffect(() => {
+    if (showSplash || !realContaId) return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const { whatsapp: wppSalvo } = JSON.parse(saved) as { whatsapp: string };
+      if (!wppSalvo) return;
+      setWppInput(wppSalvo);
+      setIdentificacao("buscando");
+      fetch(`/api/cliente-whatsapp?contaId=${realContaId}&whatsapp=${encodeURIComponent(wppSalvo)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.cliente) { setIdentificacao("entrada"); return; }
+          setClienteEncontrado(data.cliente);
+          setPedidosAnteriores(data.pedidos ?? []);
+          setNome(data.cliente.nome);
+          setWhatsapp(data.cliente.whatsapp || wppSalvo);
+          setEndereco(data.cliente.endereco ?? "");
+          setNumEnd(data.cliente.numero ?? "");
+          setComplemento(data.cliente.complemento ?? "");
+          setBairro(data.cliente.bairro ?? "");
+          setCidade(data.cliente.cidade ?? "");
+          setIdentificacao("encontrado");
+        })
+        .catch(() => setIdentificacao("entrada"));
+    } catch { setIdentificacao("entrada"); }
+  }, [showSplash, realContaId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function buscarCliente() {
     if (!wppInput.trim() || !realContaId) return;
     setIdentificacao("buscando");
@@ -416,6 +447,7 @@ export default function PedidoClientePage() {
       const data = await res.json();
       if (!res.ok) { console.error("API erro:", data); setIdentificacao("nao_encontrado"); return; }
       if (data.cliente) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ whatsapp: wppInput.trim() }));
         setClienteEncontrado(data.cliente);
         setPedidosAnteriores(data.pedidos ?? []);
         setNome(data.cliente.nome);
@@ -585,6 +617,8 @@ export default function PedidoClientePage() {
         ``,
         `🔗 *Acompanhe seu pedido:* ${statusUrl}`,
       ].filter(Boolean).join("\n");
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ whatsapp: whatsapp.trim() }));
 
       const telefone = conta?.telefone?.replace(/\D/g, "") ?? "";
       if (telefone) window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`, "_blank");
@@ -773,6 +807,19 @@ export default function PedidoClientePage() {
             fontSize: 11.5,
           }}>
             Entrar no cardápio
+          </button>
+
+          <button onClick={() => {
+            localStorage.removeItem(STORAGE_KEY);
+            setClienteEncontrado(null);
+            setWppInput("");
+            setIdentificacao("entrada");
+          }} style={{
+            background: "none", border: "none", color: C.muted, fontSize: 11,
+            padding: "10px", cursor: "pointer", fontFamily: sans, fontWeight: 300,
+            letterSpacing: "0.06em", marginTop: 4,
+          }}>
+            Não sou eu
           </button>
         </div>
       </div>
