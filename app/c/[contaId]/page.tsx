@@ -414,6 +414,7 @@ export default function PedidoClientePage() {
     try {
       const res = await fetch(`/api/cliente-whatsapp?contaId=${realContaId}&whatsapp=${encodeURIComponent(wppInput.trim())}`);
       const data = await res.json();
+      if (!res.ok) { console.error("API erro:", data); setIdentificacao("nao_encontrado"); return; }
       if (data.cliente) {
         setClienteEncontrado(data.cliente);
         setPedidosAnteriores(data.pedidos ?? []);
@@ -428,7 +429,8 @@ export default function PedidoClientePage() {
       } else {
         setIdentificacao("nao_encontrado");
       }
-    } catch {
+    } catch (err) {
+      console.error("buscarCliente erro:", err);
       setIdentificacao("nao_encontrado");
     }
   }
