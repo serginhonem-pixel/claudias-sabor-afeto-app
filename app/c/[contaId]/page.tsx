@@ -372,6 +372,7 @@ export default function PedidoClientePage() {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
+  const [autoIdentificando, setAutoIdentificando] = useState(false);
   const [identificacao, setIdentificacao] = useState<"entrada" | "buscando" | "encontrado" | "nao_encontrado" | "pulado">("entrada");
   const [wppInput, setWppInput] = useState("");
   const [clienteEncontrado, setClienteEncontrado] = useState<Cliente | null>(null);
@@ -410,7 +411,7 @@ export default function PedidoClientePage() {
     })();
   }, [contaId]);
 
-  // Ao sair da splash, verifica se cliente já visitou antes
+  // Ao sair da splash, verifica se cliente já visitou antes (silenciosamente)
   useEffect(() => {
     if (showSplash || !realContaId) return;
     try {
@@ -419,11 +420,12 @@ export default function PedidoClientePage() {
       const { whatsapp: wppSalvo } = JSON.parse(saved) as { whatsapp: string };
       if (!wppSalvo) return;
       setWppInput(wppSalvo);
-      setIdentificacao("buscando");
+      setAutoIdentificando(true);
       fetch(`/api/cliente-whatsapp?contaId=${realContaId}&whatsapp=${encodeURIComponent(wppSalvo)}`)
         .then(r => r.json())
         .then(data => {
-          if (!data.cliente) { setIdentificacao("entrada"); return; }
+          setAutoIdentificando(false);
+          if (!data.cliente) return; // fica na tela de entrada normalmente
           setClienteEncontrado(data.cliente);
           setPedidosAnteriores(data.pedidos ?? []);
           setNome(data.cliente.nome);
@@ -435,8 +437,8 @@ export default function PedidoClientePage() {
           setCidade(data.cliente.cidade ?? "");
           setIdentificacao("encontrado");
         })
-        .catch(() => setIdentificacao("entrada"));
-    } catch { setIdentificacao("entrada"); }
+        .catch(() => setAutoIdentificando(false));
+    } catch { setAutoIdentificando(false); }
   }, [showSplash, realContaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function buscarCliente() {
@@ -655,6 +657,33 @@ export default function PedidoClientePage() {
   // ── Splash ──────────────────────────────────────────────────────────────────
   if (showSplash && conta) {
     return <SplashCardapio nomeConta={conta.nome} onEnter={() => setShowSplash(false)} />;
+  }
+
+  // ── Auto-identificando (silencioso) ──────────────────────────────────────────
+  if (autoIdentificando) {
+    return (
+      <div style={{
+        minHeight: "100vh", background: `radial-gradient(ellipse at 50% 20%, #2A1A0E 0%, ${C.bg} 70%)`,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        fontFamily: sans,
+      }}>
+        <style>{FONTS}</style>
+        <div style={{
+          display: "inline-block", background: C.cream, borderRadius: 4,
+          padding: "16px 28px", marginBottom: 36,
+          boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${C.goldSoft}`,
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Claudia's" width={150} style={{ display: "block" }} />
+        </div>
+        <div style={{
+          width: 32, height: 32, borderRadius: "50%",
+          border: `1.5px solid ${C.goldFaint}`, borderTopColor: C.gold,
+          animation: "spin 0.9s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   // ── Identificação ────────────────────────────────────────────────────────────
