@@ -26,18 +26,38 @@ export async function GET(req: NextRequest) {
     const db = getAdminDb();
     const limpo = whatsapp.replace(/\D/g, "");
 
-    const [snap1, snap2] = await Promise.all([
-      db.collection("contas").doc(contaId).collection("clientes").where("whatsapp", "==", limpo).limit(1).get(),
-      db.collection("contas").doc(contaId).collection("clientes").where("whatsapp", "==", whatsapp).limit(1).get(),
-    ]);
+    // Gera variações de formato para o número brasileiro
+    function formatarBR(digits: string): string[] {
+      const variants: string[] = [digits];
+      if (digits.length === 11) {
+        const ddd = digits.slice(0, 2);
+        const num = digits.slice(2);
+        variants.push(`(${ddd}) ${num.slice(0, 5)}-${num.slice(5)}`);
+        variants.push(`${ddd} ${num.slice(0, 5)}-${num.slice(5)}`);
+      } else if (digits.length === 10) {
+        const ddd = digits.slice(0, 2);
+        const num = digits.slice(2);
+        variants.push(`(${ddd}) ${num.slice(0, 4)}-${num.slice(4)}`);
+        variants.push(`${ddd} ${num.slice(0, 4)}-${num.slice(4)}`);
+      }
+      return variants;
+    }
 
-    const doc = snap1.docs[0] ?? snap2.docs[0];
+    const variants = [...new Set([...formatarBR(limpo), whatsapp])];
+
+    // Firestore só aceita até 30 valores no "in", mas aqui teremos poucos
+    const snap = await db.collection("contas").doc(contaId).collection("clientes")
+      .where("whatsapp", "in", variants)
+      .limit(1)
+      .get();
+
+    const doc = snap.docs[0];
     if (!doc) return NextResponse.json({ cliente: null, pedidos: [] });
 
     const clienteData = { id: doc.id, ...doc.data() };
 
     const pedidosSnap = await db.collection("contas").doc(contaId).collection("pedidos")
-      .where("clienteWhatsapp", "in", [limpo, whatsapp])
+      .where("clienteWhatsapp", "in", variants)
       .orderBy("createdAt", "desc")
       .limit(5)
       .get();

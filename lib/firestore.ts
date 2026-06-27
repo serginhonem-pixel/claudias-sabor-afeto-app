@@ -68,8 +68,9 @@ export async function getClientes(contaId: string): Promise<Cliente[]> {
 }
 
 export async function saveCliente(contaId: string, data: Omit<Cliente, "id" | "contaId">, id?: string): Promise<string> {
-  if (id) { await updateDoc(docRef(contaId, "clientes", id), data as DocumentData); return id; }
-  const ref = await addDoc(col(contaId, "clientes"), { ...data, contaId, createdAt: Timestamp.now() });
+  const normalized = { ...data, whatsapp: data.whatsapp.replace(/\D/g, "") };
+  if (id) { await updateDoc(docRef(contaId, "clientes", id), normalized as DocumentData); return id; }
+  const ref = await addDoc(col(contaId, "clientes"), { ...normalized, contaId, createdAt: Timestamp.now() });
   return ref.id;
 }
 
