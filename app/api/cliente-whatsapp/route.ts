@@ -27,8 +27,8 @@ export async function GET(req: NextRequest) {
     const limpo = whatsapp.replace(/\D/g, "");
 
     const [snap1, snap2] = await Promise.all([
-      db.collection("contas").doc(contaId).collection("clientes").where("clienteWhatsapp", "==", limpo).limit(1).get(),
-      db.collection("contas").doc(contaId).collection("clientes").where("clienteWhatsapp", "==", whatsapp).limit(1).get(),
+      db.collection("contas").doc(contaId).collection("clientes").where("whatsapp", "==", limpo).limit(1).get(),
+      db.collection("contas").doc(contaId).collection("clientes").where("whatsapp", "==", whatsapp).limit(1).get(),
     ]);
 
     const doc = snap1.docs[0] ?? snap2.docs[0];
