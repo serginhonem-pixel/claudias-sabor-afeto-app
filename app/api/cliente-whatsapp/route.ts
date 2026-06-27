@@ -26,22 +26,21 @@ export async function GET(req: NextRequest) {
     const db = getAdminDb();
     const limpo = whatsapp.replace(/\D/g, "");
 
-    // Gera variações de formato para o número brasileiro
-    function formatarBR(digits: string): string[] {
-      const variants: string[] = [digits];
+    const formatarBR = (digits: string): string[] => {
+      const vars: string[] = [digits];
       if (digits.length === 11) {
         const ddd = digits.slice(0, 2);
         const num = digits.slice(2);
-        variants.push(`(${ddd}) ${num.slice(0, 5)}-${num.slice(5)}`);
-        variants.push(`${ddd} ${num.slice(0, 5)}-${num.slice(5)}`);
+        vars.push(`(${ddd}) ${num.slice(0, 5)}-${num.slice(5)}`);
+        vars.push(`${ddd} ${num.slice(0, 5)}-${num.slice(5)}`);
       } else if (digits.length === 10) {
         const ddd = digits.slice(0, 2);
         const num = digits.slice(2);
-        variants.push(`(${ddd}) ${num.slice(0, 4)}-${num.slice(4)}`);
-        variants.push(`${ddd} ${num.slice(0, 4)}-${num.slice(4)}`);
+        vars.push(`(${ddd}) ${num.slice(0, 4)}-${num.slice(4)}`);
+        vars.push(`${ddd} ${num.slice(0, 4)}-${num.slice(4)}`);
       }
-      return variants;
-    }
+      return vars;
+    };
 
     const variants = [...new Set([...formatarBR(limpo), whatsapp])];
 
