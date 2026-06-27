@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       return vars;
     };
 
-    const variants = [...new Set([...formatarBR(limpo), whatsapp])];
+    const variants = Array.from(new Set(formatarBR(limpo).concat([whatsapp])));
 
     // Firestore só aceita até 30 valores no "in", mas aqui teremos poucos
     const snap = await db.collection("contas").doc(contaId).collection("clientes")
