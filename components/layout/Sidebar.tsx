@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useConta } from "@/hooks/useConta";
-import { LayoutDashboard, ShoppingBag, Cake, BookOpen, Package, TrendingUp, Users, Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, ShoppingCart, FileText, Percent } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Cake, BookOpen, Package, TrendingUp, Users, Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, ShoppingCart, FileText, Percent, Camera } from "lucide-react";
 
 const nav = [
   { section: "Principal" },
@@ -19,6 +19,7 @@ const nav = [
   { section: "Cadastros" },
   { label: "Clientes",   href: "/clientes",  icon: Users },
   { section: "Ferramentas" },
+  { label: "Stories",    href: "/catalogo",   icon: Camera },
   { label: "Calendário", href: "/calendario", icon: CalendarDays },
   { label: "Compras",    href: "/compras",    icon: ShoppingCart },
   { label: "Promoções",  href: "/promocoes", icon: Percent },
