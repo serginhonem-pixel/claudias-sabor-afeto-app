@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Claudia's Sabor e Afeto",
   description: "Gestão da sua confeitaria artesanal",
   manifest: "/manifest.json",
-  icons: { icon: "/logo.png", apple: "/logo.png" },
+  icons: { icon: "/icon.png", apple: "/icon-192.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

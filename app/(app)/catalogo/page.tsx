@@ -35,26 +35,14 @@ const STORY_H = 1920;
 export default function CatalogoPage() {
   const { conta } = useConta();
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [baixando, setBaixando] = useState(false);
+  const [gerando, setGerando] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const storyRef = useRef<HTMLDivElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [escala, setEscala] = useState(0.3);
 
   useEffect(() => {
     if (!conta) return;
     getProdutos(conta.id).then(setProdutos);
   }, [conta]);
-
-  useEffect(() => {
-    function ajustarEscala() {
-      if (!wrapperRef.current) return;
-      const larguraDisponivel = wrapperRef.current.clientWidth;
-      setEscala(Math.min(0.5, larguraDisponivel / STORY_W));
-    }
-    ajustarEscala();
-    window.addEventListener("resize", ajustarEscala);
-    return () => window.removeEventListener("resize", ajustarEscala);
-  }, []);
 
   const disponiveis = produtos
     .filter(p => p.status === "ativo" && p.estoque !== undefined && p.estoque > 0)
@@ -62,19 +50,37 @@ export default function CatalogoPage() {
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
 
+  async function gerarCanvas() {
+    if (!storyRef.current) return null;
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(storyRef.current, {
+      width: STORY_W,
+      height: STORY_H,
+      windowWidth: STORY_W,
+      windowHeight: STORY_H,
+      scale: 1,
+      useCORS: true,
+      backgroundColor: null,
+    });
+  }
+
+  useEffect(() => {
+    if (disponiveis.length === 0) { setPreviewUrl(null); return; }
+    setGerando(true);
+    gerarCanvas()
+      .then(canvas => setPreviewUrl(canvas ? canvas.toDataURL("image/png") : null))
+      .catch(() => toast.error("Erro ao gerar a pré-visualização"))
+      .finally(() => setGerando(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [produtos, conta?.instagram]);
+
   async function handleDownload() {
-    if (!storyRef.current) return;
-    setBaixando(true);
+    setGerando(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(storyRef.current, {
-        width: STORY_W,
-        height: STORY_H,
-        scale: 1,
-        useCORS: true,
-        backgroundColor: null,
-      });
+      const canvas = await gerarCanvas();
+      if (!canvas) return;
       const url = canvas.toDataURL("image/png");
+      setPreviewUrl(url);
       const a = document.createElement("a");
       a.href = url;
       a.download = `disponiveis-${new Date().toISOString().slice(0, 10)}.png`;
@@ -84,7 +90,7 @@ export default function CatalogoPage() {
       console.error(e);
       toast.error("Erro ao gerar a imagem");
     } finally {
-      setBaixando(false);
+      setGerando(false);
     }
   }
 
@@ -93,10 +99,10 @@ export default function CatalogoPage() {
       <Topbar title="Stories" actions={
         <button
           onClick={handleDownload}
-          disabled={baixando || disponiveis.length === 0}
+          disabled={gerando || disponiveis.length === 0}
           className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
         >
-          <Download size={13} /> {baixando ? "Gerando..." : "Baixar imagem"}
+          <Download size={13} /> {gerando ? "Gerando..." : "Baixar imagem"}
         </button>
       } />
 
@@ -105,16 +111,29 @@ export default function CatalogoPage() {
           Gera automaticamente uma imagem de Story (1080x1920) com os produtos que estão com estoque disponível agora, pra postar no Instagram.
         </p>
 
-        <div ref={wrapperRef} className="w-full flex justify-center">
+        <div className="w-full flex justify-center">
           {disponiveis.length === 0 ? (
             <div className="bg-white rounded-xl border-2 border-dashed border-rose-light p-10 text-center max-w-md">
               <p className="text-4xl mb-3">📸</p>
               <p className="text-muted text-sm">Nenhum produto com estoque disponível agora.</p>
               <p className="text-muted text-xs mt-1">Cadastre o estoque na tela <strong>Estoque</strong>, aba Produtos, pra ele aparecer aqui.</p>
             </div>
+          ) : previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="Prévia do story"
+              style={{ width: 340, maxWidth: "100%", aspectRatio: `${STORY_W} / ${STORY_H}`, borderRadius: 16, boxShadow: "0 8px 30px rgba(0,0,0,0.12)", objectFit: "contain" }}
+            />
           ) : (
-            <div style={{ width: STORY_W * escala, height: STORY_H * escala, overflow: "hidden" }}>
-              <div style={{ width: STORY_W, height: STORY_H, transform: `scale(${escala})`, transformOrigin: "top left" }}>
+            <div style={{ width: 340, aspectRatio: `${STORY_W} / ${STORY_H}` }} className="bg-white rounded-2xl border border-rose-light/60 flex items-center justify-center">
+              <p className="text-xs text-muted">Gerando pré-visualização...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Nó real (fora da tela) usado pelo html2canvas para gerar a imagem em resolução cheia */}
+        <div style={{ position: "fixed", top: 0, left: "-9999px", zIndex: -1 }} aria-hidden>
               <div
                 ref={storyRef}
                 style={{
@@ -182,9 +201,6 @@ export default function CatalogoPage() {
                   )}
                 </div>
               </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </>
