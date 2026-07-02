@@ -50,8 +50,22 @@ export default function CatalogoPage() {
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
 
+  function esperarImagens(container: HTMLElement): Promise<void> {
+    const imgs = Array.from(container.querySelectorAll("img"));
+    return Promise.all(
+      imgs.map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise<void>(resolve => {
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        });
+      })
+    ).then(() => undefined);
+  }
+
   async function gerarCanvas() {
     if (!storyRef.current) return null;
+    await esperarImagens(storyRef.current);
     const html2canvas = (await import("html2canvas")).default;
     return html2canvas(storyRef.current, {
       width: STORY_W,
