@@ -224,8 +224,8 @@ export default function ProdutosPage() {
                 {/* Estoque */}
                 {p.estoque !== undefined && (
                   <p className="text-[0.65rem] text-muted -mt-1">
-                    Estoque: <strong className="text-dark">{p.estoque} bolo{p.estoque !== 1 ? "s" : ""}</strong>
-                    {p.fatiasPorBolo ? <> · <strong className="text-dark">{p.estoque * p.fatiasPorBolo} fatias</strong> disponíveis</> : null}
+                    Estoque: <strong className="text-dark">{p.estoque % 1 === 0 ? p.estoque : p.estoque.toFixed(1)} bolo{p.estoque !== 1 ? "s" : ""}</strong>
+                    {p.fatiasPorBolo ? <> · <strong className="text-dark">{Math.round(p.estoque * p.fatiasPorBolo)} fatias</strong> disponíveis</> : null}
                   </p>
                 )}
 

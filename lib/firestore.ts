@@ -1,9 +1,9 @@
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, setDoc,
-  deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, DocumentData,
+  deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, DocumentData, increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Conta, Cliente, Insumo, Receita, Produto, Pedido, GrupoPromocao } from "@/types";
+import type { Conta, Cliente, Insumo, Receita, Produto, Pedido, ItemPedido, GrupoPromocao } from "@/types";
 
 function requireDb() {
   if (!db) throw new Error("Firebase não configurado.");
@@ -202,7 +202,28 @@ export async function getProximoNumeroPedido(contaId: string): Promise<number> {
   return (snap.docs[0].data().numero ?? 0) + 1;
 }
 
+async function ajustarEstoqueBolo(contaId: string, itens: ItemPedido[], sinal: 1 | -1) {
+  for (const item of itens) {
+    const ref = docRef(contaId, "produtos", item.produtoId);
+    const snap = await getDoc(ref);
+    const fatiasPorBolo = snap.data()?.fatiasPorBolo;
+    if (!snap.exists() || !fatiasPorBolo || fatiasPorBolo <= 0) continue;
+    await updateDoc(ref, { estoque: increment(sinal * (item.quantidade / fatiasPorBolo)) });
+  }
+}
+
 export async function savePedido(contaId: string, data: Omit<Pedido, "id" | "contaId">, id?: string): Promise<string> {
+  if (!id) {
+    await ajustarEstoqueBolo(contaId, data.itens, -1);
+  } else {
+    const anterior = await getPedidoById(contaId, id);
+    if (anterior) {
+      const eraCancelado = anterior.status === "cancelado";
+      const ficaCancelado = data.status === "cancelado";
+      if (!eraCancelado && ficaCancelado) await ajustarEstoqueBolo(contaId, anterior.itens, 1);
+      else if (eraCancelado && !ficaCancelado) await ajustarEstoqueBolo(contaId, data.itens, -1);
+    }
+  }
   const payload = {
     ...data, contaId,
     obs: data.obs ?? "",
@@ -216,5 +237,9 @@ export async function savePedido(contaId: string, data: Omit<Pedido, "id" | "con
 }
 
 export async function deletePedido(contaId: string, id: string) {
+  const pedido = await getPedidoById(contaId, id);
+  if (pedido && pedido.status !== "cancelado") {
+    await ajustarEstoqueBolo(contaId, pedido.itens, 1);
+  }
   await deleteDoc(docRef(contaId, "pedidos", id));
 }
