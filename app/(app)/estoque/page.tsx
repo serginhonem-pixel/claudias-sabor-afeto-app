@@ -1,15 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useConta } from "@/hooks/useConta";
-import { getInsumos, saveInsumo, deleteInsumo } from "@/lib/firestore";
+import { getInsumos, saveInsumo, deleteInsumo, getProdutos, saveProduto } from "@/lib/firestore";
 import { Topbar } from "@/components/layout/Topbar";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
-import type { Insumo } from "@/types";
+import type { Insumo, Produto } from "@/types";
 
 const CATS = ["Farinhas", "Açúcares", "Laticínios", "Ovos", "Gorduras", "Chocolates", "Frutas", "Embalagens", "Outros"];
 const UNIDADES = ["g", "kg", "ml", "L", "un", "cx", "pct"];
+const CATS_PRODUTO = ["Confeitaria", "Salgado", "Panificado", "Kit", "Outro"];
 
 const EMPTY: Omit<Insumo, "id" | "contaId"> = {
   nome: "", categoria: "Farinhas", unidade: "g", estoque: 0,
@@ -22,8 +23,11 @@ function fmt(v: number) {
 
 export default function EstoquePage() {
   const { conta } = useConta();
+  const [aba, setAba] = useState<"insumos" | "produtos">("insumos");
   const [insumos, setInsumos] = useState<Insumo[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
   const [filtro, setFiltro] = useState("todos");
+  const [filtroProduto, setFiltroProduto] = useState("todos");
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
@@ -37,6 +41,25 @@ export default function EstoquePage() {
     getInsumos(conta.id).then(setInsumos);
   }
   useEffect(load, [conta]);
+  function loadProdutos() {
+    if (!conta) return;
+    getProdutos(conta.id).then(setProdutos);
+  }
+  useEffect(loadProdutos, [conta]);
+
+  function handleEstoqueProdutoLocal(produtoId: string, novoEstoque: number) {
+    setProdutos(prev => prev.map(x => x.id === produtoId ? { ...x, estoque: novoEstoque } : x));
+  }
+
+  async function handleEstoqueProdutoSalvar(p: Produto) {
+    if (!conta) return;
+    try {
+      await saveProduto(conta.id, { ...p }, p.id);
+    } catch {
+      toast.error("Erro ao atualizar estoque");
+      loadProdutos();
+    }
+  }
 
   function openNew() {
     setEditando(null);
@@ -82,16 +105,31 @@ export default function EstoquePage() {
   const filtrados = filtro === "todos" ? insumos : insumos.filter(i => i.categoria === filtro);
   const abaixoMinimo = insumos.filter(i => i.estoque <= i.estoqueMinimo && i.estoqueMinimo > 0);
 
+  const filtradosProdutos = filtroProduto === "todos" ? produtos : produtos.filter(p => p.categoria === filtroProduto);
+
   return (
     <>
-      <Topbar title="Estoque de Insumos" actions={
-        <button onClick={openNew} className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-          <Plus size={13} /> Cadastrar
-        </button>
+      <Topbar title="Estoque" actions={
+        aba === "insumos" ? (
+          <button onClick={openNew} className="flex items-center gap-1.5 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+            <Plus size={13} /> Cadastrar
+          </button>
+        ) : null
       } />
 
       <div className="p-4 md:p-6 max-w-5xl">
-        {abaixoMinimo.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setAba("insumos")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${aba === "insumos" ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+            Insumos
+          </button>
+          <button onClick={() => setAba("produtos")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${aba === "produtos" ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+            Produtos (PA)
+          </button>
+        </div>
+
+        {aba === "insumos" && abaixoMinimo.length > 0 && (
           <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
             <button
               onClick={() => setAvisoExpandido(v => !v)}
@@ -125,87 +163,153 @@ export default function EstoquePage() {
           </div>
         )}
 
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {["todos", ...CATS].map(c => (
-            <button key={c} onClick={() => setFiltro(c)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === c ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
-              {c === "todos" ? "Todos" : c}
-            </button>
-          ))}
-        </div>
+        {aba === "insumos" && (
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+              {["todos", ...CATS].map(c => (
+                <button key={c} onClick={() => setFiltro(c)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtro === c ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+                  {c === "todos" ? "Todos" : c}
+                </button>
+              ))}
+            </div>
 
-        {filtrados.length === 0 ? (
-          <div className="bg-white rounded-xl border-2 border-dashed border-rose-light p-10 text-center">
-            <p className="text-4xl mb-3">📦</p>
-            <p className="text-muted text-sm mb-4">
-              {filtro === "todos" ? "Nenhum insumo cadastrado ainda." : `Nenhum insumo em "${filtro}".`}
-            </p>
-            <button onClick={openNew} className="inline-flex items-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
-              <Plus size={14} /> Cadastrar primeiro insumo
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-rose-light/60 overflow-hidden">
-            <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-4 px-5 py-2 border-b border-rose-light/40 text-[0.65rem] font-semibold text-muted uppercase tracking-wide">
-              <span>Insumo</span><span>Estoque</span><span>Mínimo</span><span>Custo / un.</span><span>Fornecedor</span><span></span>
+            {filtrados.length === 0 ? (
+              <div className="bg-white rounded-xl border-2 border-dashed border-rose-light p-10 text-center">
+                <p className="text-4xl mb-3">📦</p>
+                <p className="text-muted text-sm mb-4">
+                  {filtro === "todos" ? "Nenhum insumo cadastrado ainda." : `Nenhum insumo em "${filtro}".`}
+                </p>
+                <button onClick={openNew} className="inline-flex items-center gap-2 bg-[#C4566A] hover:bg-[#C4566A]/90 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+                  <Plus size={14} /> Cadastrar primeiro insumo
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-rose-light/60 overflow-hidden">
+                <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-4 px-5 py-2 border-b border-rose-light/40 text-[0.65rem] font-semibold text-muted uppercase tracking-wide">
+                  <span>Insumo</span><span>Estoque</span><span>Mínimo</span><span>Custo / un.</span><span>Fornecedor</span><span></span>
+                </div>
+                <div className="divide-y divide-rose-light/40">
+                  {filtrados.map(i => {
+                    const baixo = i.estoqueMinimo > 0 && i.estoque <= i.estoqueMinimo;
+                    return (
+                      <div key={i.id} className="grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-2 md:gap-4 px-5 py-3 items-center hover:bg-cream/50 transition">
+                        <div>
+                          <p className="font-semibold text-dark text-sm flex items-center gap-2">
+                            {i.nome}
+                            {baixo && <AlertTriangle size={12} className="text-amber-500 shrink-0" />}
+                          </p>
+                          <p className="text-[0.65rem] text-muted">
+                            {i.categoria}
+                            {i.equivalencia && (
+                              <span className="ml-2 text-rose/70">· 1 {i.unidade} = {i.equivalencia.quantidade} {i.equivalencia.unidade}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <span className={`text-sm font-semibold ${baixo ? "text-amber-600" : "text-dark"}`}>
+                            {i.estoque} {i.unidade}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm text-muted">{i.estoqueMinimo} {i.unidade}</span>
+                        </div>
+                        <div>
+                          <span className="text-sm text-dark">{fmt(i.custoPorUnidade)}<span className="text-muted text-xs">/{i.unidade}</span></span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted truncate">{i.fornecedor || "—"}</span>
+                        </div>
+                        <div className="flex gap-1 justify-end">
+                          <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => handleDelete(i.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose hover:bg-cream/50 transition font-medium border-t border-dashed border-rose-light/60">
+                    <Plus size={13} /> Adicionar insumo
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {aba === "produtos" && (
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+              {["todos", ...CATS_PRODUTO].map(c => (
+                <button key={c} onClick={() => setFiltroProduto(c)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${filtroProduto === c ? "bg-[#C4566A] text-white border-rose" : "bg-white text-muted border-rose-light hover:border-rose-mid"}`}>
+                  {c === "todos" ? "Todos" : c}
+                </button>
+              ))}
             </div>
-            <div className="divide-y divide-rose-light/40">
-              {filtrados.map(i => {
-                const baixo = i.estoqueMinimo > 0 && i.estoque <= i.estoqueMinimo;
-                return (
-                  <div key={i.id} className="grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr_80px] gap-2 md:gap-4 px-5 py-3 items-center hover:bg-cream/50 transition">
-                    <div>
-                      <p className="font-semibold text-dark text-sm flex items-center gap-2">
-                        {i.nome}
-                        {baixo && <AlertTriangle size={12} className="text-amber-500 shrink-0" />}
-                      </p>
-                      <p className="text-[0.65rem] text-muted">
-                        {i.categoria}
-                        {i.equivalencia && (
-                          <span className="ml-2 text-rose/70">· 1 {i.unidade} = {i.equivalencia.quantidade} {i.equivalencia.unidade}</span>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <span className={`text-sm font-semibold ${baixo ? "text-amber-600" : "text-dark"}`}>
-                        {i.estoque} {i.unidade}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted">{i.estoqueMinimo} {i.unidade}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm text-dark">{fmt(i.custoPorUnidade)}<span className="text-muted text-xs">/{i.unidade}</span></span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted truncate">{i.fornecedor || "—"}</span>
-                    </div>
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-rose-light text-muted hover:text-rose transition">
-                        <Pencil size={13} />
-                      </button>
-                      <button onClick={() => handleDelete(i.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 transition">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              <button onClick={openNew} className="w-full flex items-center justify-center gap-2 py-3 text-xs text-muted hover:text-rose hover:bg-cream/50 transition font-medium border-t border-dashed border-rose-light/60">
-                <Plus size={13} /> Adicionar insumo
-              </button>
-            </div>
-          </div>
+
+            {filtradosProdutos.length === 0 ? (
+              <div className="bg-white rounded-xl border-2 border-dashed border-rose-light p-10 text-center">
+                <p className="text-4xl mb-3">🎂</p>
+                <p className="text-muted text-sm">
+                  {filtroProduto === "todos" ? "Nenhum produto cadastrado ainda." : `Nenhum produto em "${filtroProduto}".`}
+                </p>
+                <p className="text-muted text-xs mt-1">Produtos são cadastrados na tela <strong>Produtos</strong>.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-rose-light/60 overflow-hidden">
+                <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-5 py-2 border-b border-rose-light/40 text-[0.65rem] font-semibold text-muted uppercase tracking-wide">
+                  <span>Produto</span><span>Estoque (bolos)</span><span>Fatias disponíveis</span><span>Status</span>
+                </div>
+                <div className="divide-y divide-rose-light/40">
+                  {filtradosProdutos.map(p => {
+                    const statusLabel = { ativo: "Ativo", encomenda: "Encomenda", inativo: "Inativo" };
+                    return (
+                      <div key={p.id} className="grid md:grid-cols-[2fr_1fr_1fr_1fr] gap-2 md:gap-4 px-5 py-3 items-center hover:bg-cream/50 transition">
+                        <div>
+                          <p className="font-semibold text-dark text-sm">{p.nome}</p>
+                          <p className="text-[0.65rem] text-muted">{p.categoria} · {p.unidadeVenda}</p>
+                        </div>
+                        <div>
+                          <input
+                            type="number" min="0" step="0.1"
+                            className="w-24 border border-rose-light rounded-lg px-2 py-1 text-sm text-center outline-none focus:border-rose-mid"
+                            value={p.estoque ?? ""}
+                            placeholder="—"
+                            onChange={e => handleEstoqueProdutoLocal(p.id, Number(e.target.value))}
+                            onBlur={() => handleEstoqueProdutoSalvar(p)}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-sm text-muted">
+                            {p.fatiasPorBolo && p.estoque !== undefined ? Math.round(p.estoque * p.fatiasPorBolo) : "—"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted">{statusLabel[p.status]}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* FAB */}
+      {aba === "insumos" && (
       <button
         onClick={openNew}
         className="fixed bottom-24 right-4 md:bottom-8 md:right-6 z-[60] flex items-center gap-2 bg-[#C4566A] hover:bg-[#b04d60] text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl transition hover:scale-105 active:scale-95"
       >
         <Plus size={18} /> Novo Insumo
       </button>
+      )}
 
       <Modal open={modal} onClose={() => setModal(false)} title={editando ? "Editar Insumo" : "Cadastrar Insumo"}>
         <div className="space-y-3">
