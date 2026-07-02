@@ -21,20 +21,41 @@ function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function disponibilidade(p: Produto): string {
+  if (p.fatiasPorBolo && p.estoque !== undefined) {
+    const fatias = Math.round(p.estoque * p.fatiasPorBolo);
+    return `${fatias} fatia${fatias !== 1 ? "s" : ""} disponível${fatias !== 1 ? "eis" : ""}`;
+  }
+  return `${p.estoque} ${p.unidadeVenda}${(p.estoque ?? 0) !== 1 ? "s" : ""} disponí${(p.estoque ?? 0) !== 1 ? "veis" : "vel"}`;
+}
+
 const STORY_W = 1080;
 const STORY_H = 1920;
+
+async function blobParaDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 async function imagemParaDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
     if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    return await blobParaDataUrl(await res.blob());
+  } catch {
+    return null;
+  }
+}
+
+async function assetLocalParaDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await blobParaDataUrl(await res.blob());
   } catch {
     return null;
   }
@@ -46,12 +67,17 @@ export default function CatalogoPage() {
   const [gerando, setGerando] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fotos, setFotos] = useState<Record<string, string>>({});
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const storyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!conta) return;
     getProdutos(conta.id).then(setProdutos);
   }, [conta]);
+
+  useEffect(() => {
+    assetLocalParaDataUrl("/logo.png").then(setLogoUrl);
+  }, []);
 
   const disponiveis = produtos
     .filter(p => p.status === "ativo" && p.estoque !== undefined && p.estoque > 0)
@@ -109,7 +135,7 @@ export default function CatalogoPage() {
       .catch(() => toast.error("Erro ao gerar a pré-visualização"))
       .finally(() => setGerando(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [produtos, conta?.instagram, fotos]);
+  }, [produtos, conta?.instagram, fotos, logoUrl]);
 
   async function handleDownload() {
     setGerando(true);
@@ -190,8 +216,10 @@ export default function CatalogoPage() {
                     display: "inline-flex", background: "#fff", borderRadius: 20,
                     padding: "16px 28px", boxShadow: "0 6px 24px rgba(196,86,106,0.12)",
                   }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/logo.png" alt="logo" style={{ height: 64, objectFit: "contain" }} />
+                    {logoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoUrl} alt="logo" style={{ height: 64, objectFit: "contain" }} />
+                    )}
                   </div>
                   <p style={{ fontSize: 44, fontWeight: 800, color: "#3a2a26", marginTop: 28, marginBottom: 6 }}>
                     Disponível para pronta entrega 🍰
@@ -232,6 +260,7 @@ export default function CatalogoPage() {
                           textShadow: "0 1px 4px rgba(0,0,0,0.4)",
                         }}>{p.nome}</p>
                         <p style={{ fontSize: 24, color: "#FFD9E1", fontWeight: 700, margin: "4px 0 0" }}>{fmt(p.precoVenda)}</p>
+                        <p style={{ fontSize: 18, color: "rgba(255,255,255,0.85)", fontWeight: 500, margin: "4px 0 0" }}>{disponibilidade(p)}</p>
                       </div>
                     </div>
                   ))}
