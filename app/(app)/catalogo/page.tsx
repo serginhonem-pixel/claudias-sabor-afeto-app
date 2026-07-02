@@ -21,22 +21,31 @@ function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function disponibilidade(p: Produto): string {
-  if (p.fatiasPorBolo && p.estoque !== undefined) {
-    const fatias = Math.round(p.estoque * p.fatiasPorBolo);
-    return `${fatias} fatia${fatias !== 1 ? "s" : ""} disponível${fatias !== 1 ? "eis" : ""}`;
-  }
-  return `${p.estoque} ${p.unidadeVenda}${(p.estoque ?? 0) !== 1 ? "s" : ""} disponí${(p.estoque ?? 0) !== 1 ? "veis" : "vel"}`;
-}
-
 const STORY_W = 1080;
 const STORY_H = 1920;
+
+async function imagemParaDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
 
 export default function CatalogoPage() {
   const { conta } = useConta();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [gerando, setGerando] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<Record<string, string>>({});
   const storyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +56,20 @@ export default function CatalogoPage() {
   const disponiveis = produtos
     .filter(p => p.status === "ativo" && p.estoque !== undefined && p.estoque > 0)
     .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  useEffect(() => {
+    const urls = disponiveis.slice(0, 6).map(p => p.imagemUrl).filter((u): u is string => !!u);
+    const faltando = urls.filter(u => !(u in fotos));
+    if (faltando.length === 0) return;
+    Promise.all(faltando.map(async u => [u, await imagemParaDataUrl(toDirectImageUrl(u))] as const)).then(pares => {
+      setFotos(prev => {
+        const next = { ...prev };
+        for (const [u, dataUrl] of pares) if (dataUrl) next[u] = dataUrl;
+        return next;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disponiveis.map(p => p.imagemUrl).join(",")]);
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
 
@@ -86,7 +109,7 @@ export default function CatalogoPage() {
       .catch(() => toast.error("Erro ao gerar a pré-visualização"))
       .finally(() => setGerando(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [produtos, conta?.instagram]);
+  }, [produtos, conta?.instagram, fotos]);
 
   async function handleDownload() {
     setGerando(true);
@@ -176,32 +199,39 @@ export default function CatalogoPage() {
                   <p style={{ fontSize: 26, color: "#C4566A", fontWeight: 600, textTransform: "capitalize" }}>{hoje}</p>
                 </div>
 
-                {/* Lista de produtos */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 22, overflow: "hidden" }}>
+                {/* Grid de produtos */}
+                <div style={{
+                  flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr",
+                  gridAutoRows: "1fr", gap: 20, overflow: "hidden",
+                }}>
                   {disponiveis.slice(0, 6).map(p => (
                     <div key={p.id} style={{
-                      display: "flex", alignItems: "center", gap: 24,
-                      background: "#fff", borderRadius: 24, padding: 20,
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.05)",
+                      position: "relative", borderRadius: 28, overflow: "hidden",
+                      background: "#FAEDEF", boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
                     }}>
-                      {p.imagemUrl ? (
+                      {p.imagemUrl && fotos[p.imagemUrl] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={toDirectImageUrl(p.imagemUrl)}
+                          src={fotos[p.imagemUrl]}
                           alt={p.nome}
-                          crossOrigin="anonymous"
-                          style={{ width: 140, height: 140, objectFit: "cover", borderRadius: 18, flexShrink: 0 }}
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                         />
                       ) : (
                         <div style={{
-                          width: 140, height: 140, borderRadius: 18, flexShrink: 0,
-                          background: "#FAEDEF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48,
+                          position: "absolute", inset: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64,
                         }}>🍰</div>
                       )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 32, fontWeight: 700, color: "#3a2a26", margin: 0, lineHeight: 1.15 }}>{p.nome}</p>
-                        <p style={{ fontSize: 24, color: "#C4566A", fontWeight: 700, margin: "6px 0" }}>{fmt(p.precoVenda)}</p>
-                        <p style={{ fontSize: 20, color: "#8a7a72", margin: 0 }}>{disponibilidade(p)}</p>
+                      <div style={{
+                        position: "absolute", left: 0, right: 0, bottom: 0,
+                        background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.72) 85%)",
+                        padding: "60px 20px 20px",
+                      }}>
+                        <p style={{
+                          fontSize: 26, fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.15,
+                          textShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                        }}>{p.nome}</p>
+                        <p style={{ fontSize: 24, color: "#FFD9E1", fontWeight: 700, margin: "4px 0 0" }}>{fmt(p.precoVenda)}</p>
                       </div>
                     </div>
                   ))}
