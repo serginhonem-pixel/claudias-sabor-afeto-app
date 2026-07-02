@@ -76,17 +76,23 @@ export default function ProdutosPage() {
     return (un === "g" || un === "ml") && venda !== "kg" && venda !== "l";
   }
 
-  function custoReceita(r: Receita, rv: ReceitaVinculada, unidadeVenda: string): number {
+  function qtdEfetiva(rv: ReceitaVinculada, fatiasPorBolo?: number): number | undefined {
+    if (rv.qtdTotalBolo && fatiasPorBolo && fatiasPorBolo > 0) return rv.qtdTotalBolo / fatiasPorBolo;
+    return rv.qtdPorUnidade;
+  }
+
+  function custoReceita(r: Receita, rv: ReceitaVinculada, unidadeVenda: string, fatiasPorBolo?: number): number {
     if (precisaQtd(r, unidadeVenda)) {
-      return rv.qtdPorUnidade ? arredondar(rv.qtdPorUnidade * r.custoPorUnidade) : 0;
+      const qtd = qtdEfetiva(rv, fatiasPorBolo);
+      return qtd ? arredondar(qtd * r.custoPorUnidade) : 0;
     }
     return arredondar(converterCusto(r.custoPorUnidade, r.unidadeRendimento, unidadeVenda));
   }
 
-  function calcCustoTotal(rv: ReceitaVinculada[], unidadeVenda: string): number {
+  function calcCustoTotal(rv: ReceitaVinculada[], unidadeVenda: string, fatiasPorBolo?: number): number {
     return arredondar(rv.reduce((sum, rv) => {
       const r = receitas.find(r => r.id === rv.receitaId);
-      return sum + (r ? custoReceita(r, rv, unidadeVenda) : 0);
+      return sum + (r ? custoReceita(r, rv, unidadeVenda, fatiasPorBolo) : 0);
     }, 0));
   }
 
@@ -109,21 +115,25 @@ export default function ProdutosPage() {
     setSaving(true);
     try {
       const custoProduto = receitasVinculadas.length > 0
-        ? calcCustoTotal(receitasVinculadas, form.unidadeVenda)
+        ? calcCustoTotal(receitasVinculadas, form.unidadeVenda, form.fatiasPorBolo)
         : form.custoProduto;
       const cmv = calcCmv(form.precoVenda, custoProduto);
       const promocoes = (form.promocoes ?? [])
         .map(p => ({ quantidade: Math.max(1, Math.round(p.quantidade)), preco: arredondar(p.preco) }))
         .filter(p => p.quantidade > 0 && p.preco > 0)
         .sort((a, b) => a.quantidade - b.quantidade);
+      const receitasComQtd = receitasVinculadas.map(rv => ({
+        ...rv,
+        qtdPorUnidade: qtdEfetiva(rv, form.fatiasPorBolo),
+      }));
       await saveProduto(conta.id, {
         ...form,
         nome: form.nome.trim(),
         custoProduto,
         cmvPercent: cmv,
-        receitasVinculadas,
-        receitaId: receitasVinculadas[0]?.receitaId,
-        receitaNome: receitasVinculadas[0]?.receitaNome,
+        receitasVinculadas: receitasComQtd,
+        receitaId: receitasComQtd[0]?.receitaId,
+        receitaNome: receitasComQtd[0]?.receitaNome,
         promocoes,
       }, editando?.id);
       toast.success(editando ? "Produto atualizado!" : "Produto criado!");
@@ -210,6 +220,14 @@ export default function ProdutosPage() {
 
                 {/* Descrição */}
                 {p.descricao && <p className="text-xs text-muted truncate -mt-1">{p.descricao}</p>}
+
+                {/* Estoque */}
+                {p.estoque !== undefined && (
+                  <p className="text-[0.65rem] text-muted -mt-1">
+                    Estoque: <strong className="text-dark">{p.estoque} bolo{p.estoque !== 1 ? "s" : ""}</strong>
+                    {p.fatiasPorBolo ? <> · <strong className="text-dark">{p.estoque * p.fatiasPorBolo} fatias</strong> disponíveis</> : null}
+                  </p>
+                )}
 
                 {/* Financeiro */}
                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -308,7 +326,7 @@ export default function ProdutosPage() {
             <div>
               <label className="field-label">Unidade de Venda</label>
               <select className="field-input" value={form.unidadeVenda} onChange={e => setForm(f => ({ ...f, unidadeVenda: e.target.value }))}>
-                {["Unidade","Kit 10un","Kit 20un","Kit 30un","Kit 50un","Caixa","Porção","Kg"].map(u=><option key={u}>{u}</option>)}
+                {["Unidade","Fatia","Kit 10un","Kit 20un","Kit 30un","Kit 50un","Caixa","Porção","Kg"].map(u=><option key={u}>{u}</option>)}
               </select>
             </div>
             <div>
@@ -325,11 +343,27 @@ export default function ProdutosPage() {
                 <input type="number" min="0" step="0.01" className="field-input" value={arredondar(form.custoProduto)} onChange={e => setForm(f=>({...f,custoProduto:Number(e.target.value)}))} />
               </div>
             )}
+            <div>
+              <label className="field-label">Estoque (bolos inteiros)</label>
+              <input type="number" min="0" step="1" className="field-input" value={form.estoque ?? ""} onChange={e => setForm(f=>({...f,estoque:Number(e.target.value)}))} placeholder="Ex: 3" />
+            </div>
           </div>
 
           {/* Receitas vinculadas */}
           <div>
             <label className="field-label">Receitas Vinculadas</label>
+            {receitasVinculadas.some(rv => { const r = receitas.find(r => r.id === rv.receitaId); return r && precisaQtd(r, form.unidadeVenda); }) && (
+              <div className="mb-2 flex items-center gap-2 bg-amber-50 rounded-lg px-3 py-2">
+                <span className="text-[0.7rem] text-amber-700 shrink-0 font-medium">Em quantas fatias esse bolo é dividido?</span>
+                <input
+                  type="number" min="1" step="1"
+                  className="w-20 border border-amber-300 rounded px-2 py-1 text-xs text-center outline-none focus:border-amber-400 bg-white"
+                  placeholder="Ex: 10"
+                  value={form.fatiasPorBolo ?? ""}
+                  onChange={e => setForm(f => ({ ...f, fatiasPorBolo: Number(e.target.value) }))}
+                />
+              </div>
+            )}
             <div className="border border-rose-light/60 rounded-xl overflow-hidden">
               {receitasVinculadas.length > 0 && (
                 <div className="divide-y divide-rose-light/40">
@@ -337,7 +371,8 @@ export default function ProdutosPage() {
                     const r = receitas.find(r => r.id === rv.receitaId);
                     if (!r) return null;
                     const needsQtd = precisaQtd(r, form.unidadeVenda);
-                    const custo = custoReceita(r, rv, form.unidadeVenda);
+                    const custo = custoReceita(r, rv, form.unidadeVenda, form.fatiasPorBolo);
+                    const qtdPorFatia = qtdEfetiva(rv, form.fatiasPorBolo);
                     return (
                       <div key={rv.receitaId} className="px-3 py-2.5 space-y-1.5">
                         <div className="flex items-center gap-2">
@@ -353,21 +388,21 @@ export default function ProdutosPage() {
                         </div>
                         {needsQtd && (
                           <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2 py-1.5">
-                            <span className="text-[0.68rem] text-amber-700 shrink-0">Quantas {r.unidadeRendimento} por unidade?</span>
+                            <span className="text-[0.68rem] text-amber-700 shrink-0">Quantas {r.unidadeRendimento} tem essa receita no bolo inteiro?</span>
                             <input
                               type="number" min="0" step="0.01"
                               className="w-20 border border-amber-300 rounded px-2 py-0.5 text-xs text-center outline-none focus:border-amber-400 bg-white"
-                              placeholder="Ex: 200"
-                              value={rv.qtdPorUnidade || ""}
+                              placeholder="Ex: 800"
+                              value={rv.qtdTotalBolo || ""}
                               onChange={e => {
                                 const qtd = Number(e.target.value);
                                 setReceitasVinculadas(prev => prev.map((item, i) =>
-                                  i === idx ? { ...item, qtdPorUnidade: qtd } : item
+                                  i === idx ? { ...item, qtdTotalBolo: qtd } : item
                                 ));
                               }}
                             />
-                            {rv.qtdPorUnidade && rv.qtdPorUnidade > 0 && (
-                              <span className="text-[0.65rem] text-emerald-700">= {fmt(arredondar(rv.qtdPorUnidade * r.custoPorUnidade))}</span>
+                            {qtdPorFatia !== undefined && qtdPorFatia > 0 && (
+                              <span className="text-[0.65rem] text-emerald-700">= {qtdPorFatia.toFixed(1)}{r.unidadeRendimento}/fatia · {fmt(arredondar(qtdPorFatia * r.custoPorUnidade))}</span>
                             )}
                           </div>
                         )}
@@ -381,7 +416,7 @@ export default function ProdutosPage() {
               {receitasVinculadas.length > 1 && (
                 <div className="px-3 py-2 bg-emerald-50 border-t border-emerald-100 flex justify-between text-xs">
                   <span className="text-emerald-700 font-medium">Custo total das receitas</span>
-                  <strong className="text-emerald-800">{fmt(calcCustoTotal(receitasVinculadas, form.unidadeVenda))}</strong>
+                  <strong className="text-emerald-800">{fmt(calcCustoTotal(receitasVinculadas, form.unidadeVenda, form.fatiasPorBolo))}</strong>
                 </div>
               )}
 
@@ -414,9 +449,9 @@ export default function ProdutosPage() {
           </div>
 
           {form.precoVenda > 0 && (
-            <div className={`rounded-xl px-4 py-2 text-xs font-semibold flex justify-between ${calcCmv(form.precoVenda, receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda) : form.custoProduto) > 35 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+            <div className={`rounded-xl px-4 py-2 text-xs font-semibold flex justify-between ${calcCmv(form.precoVenda, receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda, form.fatiasPorBolo) : form.custoProduto) > 35 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
               <span>CMV</span>
-              <span>{calcCmv(form.precoVenda, receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda) : form.custoProduto)}% — Margem: {fmt(form.precoVenda - (receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda) : form.custoProduto))}</span>
+              <span>{calcCmv(form.precoVenda, receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda, form.fatiasPorBolo) : form.custoProduto)}% — Margem: {fmt(form.precoVenda - (receitasVinculadas.length > 0 ? calcCustoTotal(receitasVinculadas, form.unidadeVenda, form.fatiasPorBolo) : form.custoProduto))}</span>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
