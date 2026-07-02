@@ -88,6 +88,7 @@ function BottomNav({ onSignOut, maisAberto, setMaisAberto }: { onSignOut: () => 
   ];
   const extras = [
     { href: "/receitas",      emoji: "📖", label: "Receitas" },
+    { href: "/catalogo",      emoji: "📸", label: "Stories" },
     { href: "/custos",        emoji: "📊", label: "Custos" },
     { href: "/clientes",      emoji: "👥", label: "Clientes" },
     { href: "/calendario",    emoji: "📅", label: "Calendário" },
