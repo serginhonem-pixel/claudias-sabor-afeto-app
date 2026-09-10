@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
+import { getAuth, Auth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, Firestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage, connectStorageEmulator } from "firebase/storage";
 
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const hasConfig = apiKey && apiKey !== "sua_api_key_aqui" && apiKey.length > 10;
@@ -24,6 +24,19 @@ if (hasConfig) {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
+
+  // Local-only: point the SDK at the Firebase Emulator Suite instead of
+  // production when NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true. Never set in
+  // deployed environments — this block is a no-op there.
+  if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" && typeof window !== "undefined") {
+    const g = globalThis as unknown as { __firebaseEmulatorsConnected?: boolean };
+    if (!g.__firebaseEmulatorsConnected) {
+      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+      connectFirestoreEmulator(db, "127.0.0.1", 8080);
+      connectStorageEmulator(storage, "127.0.0.1", 9199);
+      g.__firebaseEmulatorsConnected = true;
+    }
+  }
 }
 
 export { auth, db, storage };
